@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk.Worker">
+
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0-windows10.0.17763.0</TargetFramework>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <RootNamespace>optiCombat.Service</RootNamespace>
+    <AssemblyName>optiCombat.Service</AssemblyName>
+    <Product>optiCombat v1.0 Protection Service</Product>
+    <ApplicationIcon>..\optiCombat\optiCombat.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting.WindowsServices" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\optiCombat.Platform\optiCombat.Platform.csproj" />
+  </ItemGroup>
+
+</Project>

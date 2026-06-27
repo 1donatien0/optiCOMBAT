@@ -1,0 +1,110 @@
+# Build
+bin/
+obj/
+
+# Visual Studio / MSBuild
+.vs/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+*.DotSettings.user
+
+# JetBrains Rider
+.idea/
+
+# Logs
+*.log
+
+# NuGet
+packages/
+*.nupkg
+
+# Cache
+*.cache
+
+# Microsoft Word (audits / brouillons — synthèse officielle : README.md §12)
+*.docx
+audit_optiCombat_v8.docx
+~$*.docx
+
+# Audits Markdown (rapports de session / revues ponctuelles — ne pas versionner)
+# Doc produit versionnée : README.md, SECURITY.md, docs/*.md, native/**/README.md
+AUDIT_*.md
+audit_*.md
+RAPPORT_*.md
+rapport_*.md
+
+# Sorties de test / publish locales (racine)
+test-*.txt
+TestResults/
+artifacts/
+_build_verify/
+sbom/
+coverage/
+*.opencover.xml
+
+# Raccourcis Windows locaux (non versionnés)
+*.lnk
+Thumbs.db
+Desktop.ini
+
+# Secrets / signature (ne jamais committer)
+.env
+.env.*
+*.pfx
+*.p12
+*.snk
+secrets.json
+credentials.json
+
+# Binaires ClamAV / YARA (téléchargés via scripts/fetch-runtime-deps.ps1)
+optiCombat/clamav/x64/*.exe
+optiCombat/clamav/x64/*.dll
+optiCombat/clamav/x64/freshclam.conf
+optiCombat/clamav/x64/certs/
+optiCombat/clamav/x86/freshclam.conf
+optiCombat/clamav/database/freshclam-ci.log
+optiCombat/clamav/database/freshclam.log
+optiCombat/clamav/database/*.log
+optiCombat/clamav/x86/*.exe
+optiCombat/clamav/x86/*.dll
+optiCombat/clamav/database/*.cvd
+optiCombat/clamav/database/*.cld
+optiCombat/clamav/database/*.cud
+optiCombat/yara/*.exe
+publish/
+
+# Qualification panel (échantillons générés / malware réel / rapports)
+qualification/generated/
+qualification/malicious/
+qualification/reports/
+
+# Cache YARA compilé (généré au runtime / warmup — les .yar sources restent versionnés)
+optiCombat/rules/_compiled.yarc
+optiCombat/rules/_compiled.stamp
+optiCombat/rules/.rules_count.cache
+
+# Builds natifs MSVC / WDK (scripts/build-amsi.ps1, minifilter)
+native/**/x64/
+native/**/x86/
+native/**/ARM64/
+native/**/Debug/
+native/**/Release/
+native/**/*.obj
+native/**/*.pch
+native/**/*.pdb
+native/**/*.ilk
+native/**/*.exp
+native/**/*.lib
+native/**/*.tlog
+native/**/*.idb
+native/**/*.sys
+native/**/*.cat
+
+# Dossier output de l'installer
+installer/output/
+
+# Échantillons EICAR temporaires (tests d'intégration YARA)
+.eicar-test/

@@ -1,0 +1,17 @@
+[package]
+name = "opticombat-ffi"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[lib]
+name = "opticombat"
+# cdylib : DLL/.so consommable par C# (P/Invoke) et C.
+# staticlib : édition de liens statique éventuelle.
+crate-type = ["cdylib", "staticlib", "lib"]
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+dispatcher = { path = "../dispatcher" }
+correlator = { path = "../correlator" }

@@ -1,0 +1,87 @@
+# optiCOMBAT v1.0
+
+Antivirus Windows open source — interface **WPF .NET 8**, moteurs **ClamAV** + **YARA**, cœur natif **Rust** (`opticombat.dll`), design **Donaby**.
+
+[![CI](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml/badge.svg)](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml)
+
+**Version** : release **v1.0** · assembly / installateur **1.0.0**  
+**Dépôt** : [github.com/1donatien0/optiCOMBAT](https://github.com/1donatien0/optiCOMBAT) · branche **`main`**
+
+> Identifiants techniques : `optiCombat.exe`, dossiers `optiCombat/`, `%LocalAppData%\optiCombat`.
+
+---
+
+## Fonctionnalités
+
+| Domaine | Contenu |
+|---------|---------|
+| **Analyse** | Rapide, complète, fichier, dossier, clés USB/SD |
+| **Protection** | RTP user-mode, quarantaine AES-GCM, exclusions DPAPI, posture /100 |
+| **Interface** | Mono-fenêtre FR/EN, thèmes clair / sombre / contraste |
+| **Publication** | Installateur Inno `optiCombat_Setup_v1.0.0.exe` |
+
+La couche plateforme (service Windows, AMSI, minifiltre) est **présente mais dormante** — protection par défaut sans pilote signé.
+
+---
+
+## Installation (utilisateur)
+
+Téléchargez **`optiCombat_Setup_v1.0.0.exe`** depuis [Releases](https://github.com/1donatien0/optiCOMBAT/releases) (ou build local ci-dessous).
+
+Prérequis : Windows 10/11 **x64**, droits administrateur pour l’installateur.
+
+---
+
+## Développement
+
+```powershell
+git clone https://github.com/1donatien0/optiCOMBAT.git
+cd optiCOMBAT
+.\scripts\fetch-runtime-deps.ps1
+dotnet build optiCombat.sln -c Release
+dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release
+```
+
+**Moteur Rust** (optionnel mais recommandé) :
+
+```powershell
+.\scripts\build-engine.ps1
+```
+
+**Release complète** (tests, publish, `opticombat.dll`, installateur) :
+
+```powershell
+.\scripts\prepare-release.ps1
+# Sortie : installer\output\optiCombat_Setup_v1.0.0.exe
+```
+
+Smart App Control / Defender en dev : `.\scripts\add-defender-exclusions.ps1 -DevWorkspace` — voir [CONTRIBUTING.md](CONTRIBUTING.md).
+
+---
+
+## Documentation
+
+| Document | Sujet |
+|----------|--------|
+| [docs/GUIDE_COMPLET.md](docs/GUIDE_COMPLET.md) | Architecture, UI, release, audit (guide intégral) |
+| [docs/README.md](docs/README.md) | Index documentation |
+| [SECURITY.md](SECURITY.md) | Signalement vulnérabilités, modèle de menace |
+| [CHANGELOG.md](CHANGELOG.md) | Historique des versions |
+| [CONTRIBUTING.md](CONTRIBUTING.md) | Contribuer, build, tests |
+| [LICENSE.txt](LICENSE.txt) | Licence |
+
+---
+
+## Qualité
+
+- **300** tests unitaires Release (`dotnet test`)
+- Tests Rust : `cargo test --workspace --manifest-path engine/Cargo.toml`
+- CI GitHub sur chaque push `main` (C# + Rust)
+
+---
+
+## Crédits
+
+© 2026 **Donatien Byakombe** — **Donaby Design**
+
+ClamAV (GPLv2), YARA, Inno Setup — voir [§10 du guide complet](docs/GUIDE_COMPLET.md#10-dépendances-et-licences).

@@ -1,0 +1,31 @@
+# Harnais cargo-fuzz (libFuzzer). NON membre du workspace : se build avec
+# `cargo +nightly fuzz run <cible>`. Cible le parsing de fichiers hostiles,
+# première surface d'attaque. Voir fuzz/README.md.
+[package]
+name = "opticombat-fuzz"
+version = "0.0.0"
+edition = "2021"
+publish = false
+
+[package.metadata]
+cargo-fuzz = true
+
+[dependencies]
+libfuzzer-sys = "0.4"
+pe-analysis = { path = "../crates/pe-analysis" }
+yara-engine = { path = "../crates/yara-engine" }
+
+[[bin]]
+name = "pe_parse"
+path = "fuzz_targets/pe_parse.rs"
+test = false
+doc = false
+
+[[bin]]
+name = "yara_parse"
+path = "fuzz_targets/yara_parse.rs"
+test = false
+doc = false
+
+[workspace]
+# Workspace vide isolé : fuzz n'appartient pas au workspace principal.

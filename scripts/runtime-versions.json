@@ -1,0 +1,6 @@
+{
+  "clamavVersion": "1.4.2",
+  "clamavWinX64Url": "https://www.clamav.net/downloads/production/clamav-1.4.2.win.x64.zip",
+  "yaraVersion": "4.5.2",
+  "yaraWin64Url": "https://github.com/VirusTotal/yara/releases/download/v4.5.2/yara-4.5.2-2306-win64.zip"
+}
