@@ -1,0 +1,34 @@
+{
+  "samples": [
+    {
+      "path": "qualification/generated/eicar.com",
+      "expect": "malicious",
+      "label": "EICAR-Standard"
+    },
+    {
+      "path": "qualification/generated/behavior-dropper.ps1",
+      "expect": "malicious",
+      "label": "Synthetic-Behavior-Dropper"
+    },
+    {
+      "path": "qualification/benign/clean.txt",
+      "expect": "clean",
+      "label": "Text-Benign"
+    },
+    {
+      "path": "qualification/benign/config.json",
+      "expect": "clean",
+      "label": "Json-Benign"
+    },
+    {
+      "path": "qualification/benign/readme.md",
+      "expect": "clean",
+      "label": "Markdown-Benign"
+    },
+    {
+      "path": "qualification/benign/zeros.bin",
+      "expect": "clean",
+      "label": "Binary-Benign"
+    }
+  ]
+}

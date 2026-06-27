@@ -1,0 +1,28 @@
+root = true
+
+[*]
+charset = utf-8
+insert_final_newline = true
+
+[*.cs]
+indent_style = space
+indent_size = 4
+
+# L'analyse MSBuild Release (TreatWarningsAsErrors) n'émet pas ces diagnostics ;
+# l'IDE Roslyn les affiche en erreur par défaut — sévérité alignée sur la CI.
+dotnet_diagnostic.CA1001.severity = none
+dotnet_diagnostic.CA1068.severity = none
+dotnet_diagnostic.CA1305.severity = none
+dotnet_diagnostic.CA1310.severity = none
+dotnet_diagnostic.CA1707.severity = none
+dotnet_diagnostic.CA1805.severity = none
+dotnet_diagnostic.CA1806.severity = none
+dotnet_diagnostic.CA1816.severity = none
+dotnet_diagnostic.CA1822.severity = none
+dotnet_diagnostic.CA1859.severity = none
+dotnet_diagnostic.CA1860.severity = none
+dotnet_diagnostic.CA1861.severity = none
+dotnet_diagnostic.CA1864.severity = none
+dotnet_diagnostic.CA1869.severity = none
+dotnet_diagnostic.CA2016.severity = none
+dotnet_diagnostic.CA2101.severity = none

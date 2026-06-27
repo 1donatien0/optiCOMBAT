@@ -1,0 +1,41 @@
+# Workspace Cargo — cœur moteur optiCombat (réécriture Rust du cœur optiCombat).
+# Chaque crate = un module indépendant de la feuille de route, renvoyant un
+# résultat normalisé (EngineResult) consommé par le corrélateur central.
+[workspace]
+resolver = "2"
+members = [
+    "crates/engine-core",
+    "crates/dispatcher",
+    "crates/clamav",
+    "crates/yara-engine",
+    "crates/heuristics",
+    "crates/pe-analysis",
+    "crates/correlator",
+    "crates/quarantine",
+    "crates/opticombat-cli",
+    "crates/opticombat-ffi",
+    "crates/sandbox",
+    "crates/ml-classifier",
+    "crates/updater",
+    "crates/memory-scanner",
+    "crates/reputation",
+    "crates/platform",
+    "crates/scan-service",
+    "crates/ml-train",
+    "crates/bench",
+    "crates/qualify",
+]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.74"
+authors = ["Donatien Byakombe (Dona By)"]
+license = "Proprietary"
+
+# Profil release durci : panic=abort réduit la surface, LTO pour le moteur.
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1
+panic = "abort"

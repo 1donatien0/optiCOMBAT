@@ -1,0 +1,164 @@
+<Application x:Class="optiCombat.App"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:sys="clr-namespace:System;assembly=mscorlib"
+             xmlns:materialDesign="http://materialdesigninxaml.net/winfx/xaml/themes"
+             StartupUri="MainWindow.xaml">
+    <Application.Resources>
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+
+                <!-- MaterialDesign base (Dark pour compatibilité) -->
+                <materialDesign:BundledTheme BaseTheme="Dark"
+                                             PrimaryColor="DeepPurple"
+                                             SecondaryColor="DeepPurple"/>
+
+                <!-- Styles et icônes Material Design 2 -->
+                <ResourceDictionary Source="pack://application:,,,/MaterialDesignThemes.Wpf;component/Themes/MaterialDesign2.Defaults.xaml"/>
+
+                <!-- ═══════════════════════════════════════════════
+                     Thème Donaby au 1er frame : clair (cohérent avec UserPreferences).
+                     App.xaml.cs appelle ThemeManager.Initialize() après OnStartup
+                     pour appliquer la préférence persistée (clair ou sombre).
+                ═══════════════════════════════════════════════ -->
+                <ResourceDictionary Source="/Themes/Donaby.Light.xaml"/>
+
+                <!-- Styles des controles (boutons, DataGrid, ProgressBar) -->
+                <ResourceDictionary Source="/Styles/Controls.xaml"/>
+
+            </ResourceDictionary.MergedDictionaries>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 POLICE GLOBALE
+            ═══════════════════════════════════════════════════════ -->
+            <FontFamily x:Key="AppFontFamily">Segoe UI</FontFamily>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 ÉCHELLE TYPOGRAPHIQUE — tokens de taille de police
+                 Utiliser {DynamicResource FontSize.XXX} dans les vues.
+                 ┌─────────────────┬───────┬─────────────────────────┐
+                 │ Token           │ pt    │ Usage                   │
+                 ├─────────────────┼───────┼─────────────────────────┤
+                 │ FontSize.Hero   │ 17    │ Titre de page           │
+                 │ FontSize.Large  │ 15    │ Grands chiffres/versions│
+                 │ FontSize.Title  │ 13    │ Titre de carte/section  │
+                 │ FontSize.Body   │ 12    │ Corps standard          │
+                 │ FontSize.Small  │ 11    │ Descriptions, sous-titres│
+                 │ FontSize.Caption│ 10    │ Étiquettes compactes    │
+                 │ FontSize.Micro  │  9    │ Nav sidebar, annotations│
+                 │ FontSize.Metric │ 22    │ Grands compteurs        │
+                 │ FontSize.Display│ 26    │ Statut hero (Accueil)   │
+                 └─────────────────┴───────┴─────────────────────────┘
+            ═══════════════════════════════════════════════════════ -->
+            <sys:Double x:Key="FontSize.Hero">17</sys:Double>
+            <sys:Double x:Key="FontSize.Large">15</sys:Double>
+            <sys:Double x:Key="FontSize.Title">13</sys:Double>
+            <sys:Double x:Key="FontSize.Body">12</sys:Double>
+            <sys:Double x:Key="FontSize.Small">11</sys:Double>
+            <sys:Double x:Key="FontSize.Caption">10</sys:Double>
+            <sys:Double x:Key="FontSize.Micro">9</sys:Double>
+            <sys:Double x:Key="FontSize.Metric">22</sys:Double>
+            <sys:Double x:Key="FontSize.Display">26</sys:Double>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE IMPLICITE TEXTBLOCK
+                 Garantit la police Segoe UI sur tous les TextBlocks,
+                 même ceux hors d'un parent qui hérite FontFamily.
+                 Ne fixe pas Foreground (héritage contextuel conservé).
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="TextBlock">
+                <Setter Property="FontFamily" Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="TextOptions.TextFormattingMode" Value="Ideal"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE SCROLLBAR — adapté dynamiquement via DynamicResource
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="ScrollBar">
+                <Setter Property="Background" Value="{DynamicResource AppBg}"/>
+                <Setter Property="Width" Value="5"/>
+                <Setter Property="Template">
+                    <Setter.Value>
+                        <ControlTemplate TargetType="ScrollBar">
+                            <Grid Background="{DynamicResource AppBg}">
+                                <Track x:Name="PART_Track" IsDirectionReversed="True">
+                                    <Track.Thumb>
+                                        <Thumb>
+                                            <Thumb.Template>
+                                                <ControlTemplate TargetType="Thumb">
+                                                    <Border CornerRadius="3"
+                                                            Background="{DynamicResource BorderStrong}"
+                                                            Margin="1,0"/>
+                                                </ControlTemplate>
+                                            </Thumb.Template>
+                                        </Thumb>
+                                    </Track.Thumb>
+                                </Track>
+                            </Grid>
+                        </ControlTemplate>
+                    </Setter.Value>
+                </Setter>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE CHECKBOX
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="CheckBox" BasedOn="{StaticResource MaterialDesignCheckBox}">
+                <Setter Property="Foreground"  Value="{DynamicResource TextSecondary}"/>
+                <Setter Property="FontFamily"  Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="FontSize"    Value="{DynamicResource FontSize.Body}"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE TABITEM (défaut — vues sans style local)
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="TabItem" BasedOn="{StaticResource DonabyTabItem}"/>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE TEXTBOX
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="TextBox">
+                <Setter Property="Background"      Value="{DynamicResource SurfaceBg}"/>
+                <Setter Property="Foreground"      Value="{DynamicResource TextDark}"/>
+                <Setter Property="CaretBrush"      Value="{DynamicResource AccentBlue}"/>
+                <Setter Property="BorderBrush"     Value="{DynamicResource BorderColor}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontFamily"      Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="FontSize"        Value="{DynamicResource FontSize.Body}"/>
+                <Setter Property="Padding"         Value="8,6"/>
+                <Setter Property="SelectionBrush"  Value="{DynamicResource AccentBg}"/>
+                <Setter Property="FocusVisualStyle" Value="{x:Null}"/>
+                <Style.Triggers>
+                    <Trigger Property="IsKeyboardFocused" Value="True">
+                        <Setter Property="BorderBrush" Value="{DynamicResource AccentBlue}"/>
+                    </Trigger>
+                </Style.Triggers>
+            </Style>
+
+            <!-- ComboBox / ComboBoxItem — template Donaby (voir Controls.xaml) -->
+            <Style TargetType="ComboBox" BasedOn="{StaticResource DonabyComboBox}"/>
+            <Style TargetType="ComboBoxItem" BasedOn="{StaticResource DonabyComboBoxItem}"/>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE LISTBOX
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="ListBox">
+                <Setter Property="Background"      Value="{DynamicResource SurfaceBg}"/>
+                <Setter Property="Foreground"      Value="{DynamicResource TextSecondary}"/>
+                <Setter Property="BorderBrush"     Value="{DynamicResource BorderColor}"/>
+                <Setter Property="BorderThickness" Value="1"/>
+                <Setter Property="FontFamily"      Value="{DynamicResource AppFontFamily}"/>
+                <Setter Property="FontSize"        Value="{DynamicResource FontSize.Body}"/>
+            </Style>
+
+            <!-- ═══════════════════════════════════════════════════════
+                 STYLE SEPARATOR
+            ═══════════════════════════════════════════════════════ -->
+            <Style TargetType="Separator">
+                <Setter Property="Background" Value="{DynamicResource BorderColor}"/>
+            </Style>
+
+        </ResourceDictionary>
+    </Application.Resources>
+</Application>

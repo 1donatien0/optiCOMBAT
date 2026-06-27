@@ -1,0 +1,161 @@
+<ResourceDictionary xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- ═══════════════════════════════════════════════════════════════
+         THÈME SOMBRE — « Combat Aqua »
+         Navy profond + accent bleu-vert (teal/cyan).
+         Cohérent avec le clair : dégradé signature vert → bleu.
+    ═══════════════════════════════════════════════════════════════ -->
+
+    <!-- ── FONDS (navy glass) ── -->
+    <SolidColorBrush x:Key="AppBg"          Color="#070D12"/>
+    <SolidColorBrush x:Key="SidebarBg"      Color="#04090E"/>
+    <SolidColorBrush x:Key="ContentBg"      Color="#070D12"/>
+    <SolidColorBrush x:Key="ContentBgDeep"  Color="#070D12"/>
+    <SolidColorBrush x:Key="HeaderBg"       Color="#0E1A22"/>
+    <!-- Cartes en verre semi-transparent sur le fond mesh -->
+    <SolidColorBrush x:Key="CardBg"         Color="#CC122230"/>
+    <SolidColorBrush x:Key="CardBgHover"    Color="#DD163040"/>
+    <SolidColorBrush x:Key="SurfaceBg"      Color="#990E1A22"/>
+    <SolidColorBrush x:Key="GlassCardBg"    Color="#A3101D28"/>
+    <SolidColorBrush x:Key="BorderGlass"    Color="#554A6070"/>
+    <!-- Voile givré sur le mesh (simule diffusion acrylic WPF) -->
+    <SolidColorBrush x:Key="GlassFrostVeil" Color="#12183038"/>
+
+    <!-- ── SIDEBAR ── -->
+    <SolidColorBrush x:Key="SidebarActiveItem"  Color="#0E3338"/>
+    <SolidColorBrush x:Key="SidebarActiveGlow"  Color="#19C5BC"/>
+    <SolidColorBrush x:Key="SidebarIndicator"   Color="#46E0D2"/>
+    <SolidColorBrush x:Key="SidebarText"        Color="#6A7A80"/>
+    <SolidColorBrush x:Key="SidebarTextActive"  Color="#EAF6F4"/>
+    <SolidColorBrush x:Key="SidebarHover"       Color="#10202A"/>
+
+    <!-- ── BORDURES ── -->
+    <SolidColorBrush x:Key="BorderColor"        Color="#2C3A40"/>
+    <SolidColorBrush x:Key="BorderStrong"       Color="#3C4A50"/>
+    <SolidColorBrush x:Key="BorderSubtle"       Color="#202C32"/>
+
+    <!-- ── ACCENT PRINCIPAL (bleu-vert / teal) ── -->
+    <SolidColorBrush x:Key="PrimaryBlue"        Color="#0FB5B0"/>
+    <SolidColorBrush x:Key="AccentBlue"         Color="#3FD7C9"/>
+    <SolidColorBrush x:Key="AccentBg"           Color="#0C3A3C"/>
+
+    <!-- ── SUCCÈS / VERT ── -->
+    <SolidColorBrush x:Key="SuccessGreen"       Color="#46D6A0"/>
+    <SolidColorBrush x:Key="SuccessBg"          Color="#04342C"/>
+
+    <!-- ── ALERTE / AMBRE ── -->
+    <SolidColorBrush x:Key="AlertGold"          Color="#EF9F27"/>
+    <SolidColorBrush x:Key="AlertGoldLight"     Color="#FAC775"/>
+    <SolidColorBrush x:Key="AlertBg"            Color="#412402"/>
+    <SolidColorBrush x:Key="InfoBg"             Color="#0C2A3A"/>
+
+    <!-- ── AVERTISSEMENT / ORANGE ── -->
+    <SolidColorBrush x:Key="WarningOrange"      Color="#FB923C"/>
+
+    <!-- ── DANGER / ROUGE ── -->
+    <SolidColorBrush x:Key="DangerRed"          Color="#E24B4A"/>
+
+    <!-- ── TEXTES ── -->
+    <SolidColorBrush x:Key="TextDark"           Color="#EAF2F2"/>
+    <SolidColorBrush x:Key="TextMedium"         Color="#A6B2B4"/>
+    <SolidColorBrush x:Key="TextMuted"          Color="#7E8A8C"/>
+    <!-- Alias sémantique de TextMedium (libellés secondaires) -->
+    <SolidColorBrush x:Key="TextSecondary"      Color="#A6B2B4"/>
+    <!-- Texte sur fond accent (boutons teal) -->
+    <SolidColorBrush x:Key="TextOnPrimary"      Color="#FFFFFF"/>
+    <SolidColorBrush x:Key="TextOnPrimaryMuted" Color="#A6B2B4"/>
+    <SolidColorBrush x:Key="TextAccent"         Color="#46D7CC"/>
+
+    <!-- ── ICÔNE SUR FOND ACCENT — anneau semi-transparent posé sur PrimaryBlue ── -->
+    <SolidColorBrush x:Key="AccentIconRing"     Color="#33FFFFFF"/>
+
+    <!-- Bordure lumineuse glass -->
+    <SolidColorBrush x:Key="CardBorderAccent"  Color="#44557080"/>
+
+    <!-- Bordure verre — reflet haut-gauche + teinte teal bas-droite -->
+    <LinearGradientBrush x:Key="GlassCardRim" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#66FFFFFF" Offset="0"/>
+        <GradientStop Color="#334A6070" Offset="0.42"/>
+        <GradientStop Color="#2819C5BC" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Bordure lumineuse active (hover) -->
+    <LinearGradientBrush x:Key="CardBorderGlow" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#8819C5BC" Offset="0"/>
+        <GradientStop Color="#443FAEE8" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- ── OMBRES (minimalistes) ── -->
+    <DropShadowEffect x:Key="CardShadow"
+                      Color="#000000" Opacity="0.32"
+                      BlurRadius="20" ShadowDepth="3" Direction="270"/>
+
+    <!-- ── DÉGRADÉS ACCENT (boutons, carte héros) — vert → teal → bleu ── -->
+    <LinearGradientBrush x:Key="AccentGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#1FD0A6" Offset="0"/>
+        <GradientStop Color="#19C5BC" Offset="0.45"/>
+        <GradientStop Color="#2E97E0" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="HeroCardBorder"     Color="#44FFFFFF"/>
+
+    <LinearGradientBrush x:Key="HeroCardGradient" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#1FD0A6" Offset="0"/>
+        <GradientStop Color="#16B5BC" Offset="0.5"/>
+        <GradientStop Color="#2E97E0" Offset="1"/>
+    </LinearGradientBrush>
+    <LinearGradientBrush x:Key="ContentAreaMesh" StartPoint="0,1" EndPoint="1,0">
+        <GradientStop Color="#0A2E2C" Offset="0"/>
+        <GradientStop Color="#00000000" Offset="0.35"/>
+        <GradientStop Color="#0C2A4A" Offset="0.75"/>
+        <GradientStop Color="#00000000" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- ── EN-TÊTE DE PAGE — verre + dégradé teal ── -->
+    <LinearGradientBrush x:Key="PageHeaderMica" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#0F2128" Offset="0"/>
+        <GradientStop Color="#103035" Offset="0.55"/>
+        <GradientStop Color="#0C1E2C" Offset="1"/>
+    </LinearGradientBrush>
+
+    <!-- Accent fin pour lignes décoratives (teal → bleu) -->
+    <LinearGradientBrush x:Key="AccentLineGradient" StartPoint="0,0" EndPoint="1,0">
+        <GradientStop Color="#00000000" Offset="0"/>
+        <GradientStop Color="#19D0C6" Offset="0.4"/>
+        <GradientStop Color="#2E97E0" Offset="0.7"/>
+        <GradientStop Color="#00000000" Offset="1"/>
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="PageHeaderIconRing"   Color="#0E3A3C"/>
+    <SolidColorBrush x:Key="PageHeaderIconBorder" Color="#19C5BC"/>
+
+    <DropShadowEffect x:Key="GlowShadowAccent"
+                      Color="#19C5BC" Opacity="0.6"
+                      BlurRadius="28" ShadowDepth="0"/>
+
+    <!-- Halos hero (mode sombre) — lueur teal-vert -->
+    <DropShadowEffect x:Key="ShieldGlow"
+                      Color="#19D0A6" Opacity="0.75"
+                      BlurRadius="48" ShadowDepth="0"/>
+
+    <!-- Hero accueil — halo bleu-vert autour de l'emblème OPTICOMBAT -->
+    <Color x:Key="HeroHaloOuterColor">#8819C5BC</Color>
+    <Color x:Key="HeroHaloInnerColor">#AA46E0D2</Color>
+    <DropShadowEffect x:Key="HeroShieldPulseGlow"
+                      Color="#19C5BC" Opacity="0.6"
+                      BlurRadius="36" ShadowDepth="0"/>
+
+    <!-- ── Fond mesh animé (MainWindow) — vert + bleu ── -->
+    <Color x:Key="MeshBlob1Color">#1FD0A6</Color>
+    <Color x:Key="MeshBlob2Color">#2E97E0</Color>
+
+    <!-- ── INDICATEUR TOGGLE (icône lune pour le bouton thème) ── -->
+    <SolidColorBrush x:Key="ThemeToggleBg"      Color="#0C3A3C"/>
+    <SolidColorBrush x:Key="ThemeToggleFg"      Color="#46D7CC"/>
+
+    <!-- Badges sévérité menaces (grille Antivirus — thème clair/sombre) -->
+    <SolidColorBrush x:Key="RiskCritical"       Color="#E24B4A"/>
+    <SolidColorBrush x:Key="RiskMajor"          Color="#EF9F27"/>
+    <SolidColorBrush x:Key="RiskMinor"          Color="#BA7517"/>
+    <SolidColorBrush x:Key="RiskInformational"  Color="#46D6A0"/>
+
+</ResourceDictionary>

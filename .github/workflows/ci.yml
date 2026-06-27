@@ -1,0 +1,40 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dotnet:
+    name: .NET tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Runtime deps (ClamAV + YARA)
+        shell: pwsh
+        run: .\scripts\fetch-runtime-deps.ps1
+
+      - name: dotnet test (Release)
+        run: dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release
+
+  rust:
+    name: Rust tests
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo test
+        run: cargo test --workspace --manifest-path engine/Cargo.toml

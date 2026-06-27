@@ -1,0 +1,10 @@
+{"class":"Benign","entropy":0.33,"imports":0.16,"wx_section":0.0,"packer":0.0,"injection":0.0,"network":0.0}
+{"class":"Benign","entropy":0.41,"imports":0.26,"wx_section":0.0,"packer":0.05,"injection":0.0,"network":0.0}
+{"class":"Benign","entropy":0.36,"imports":0.19,"wx_section":0.0,"packer":0.0,"injection":0.0,"network":0.05}
+{"class":"Ransomware","entropy":0.91,"imports":0.34,"wx_section":0.0,"packer":0.58,"injection":0.0,"network":0.89}
+{"class":"Ransomware","entropy":0.93,"imports":0.37,"wx_section":0.0,"packer":0.64,"injection":0.0,"network":0.91}
+{"class":"Rat","entropy":0.74,"imports":0.54,"wx_section":1.0,"packer":0.31,"injection":1.0,"network":0.88}
+{"class":"Rat","entropy":0.70,"imports":0.49,"wx_section":1.0,"packer":0.26,"injection":1.0,"network":0.92}
+{"class":"Dropper","entropy":0.64,"imports":0.39,"wx_section":0.0,"packer":0.79,"injection":0.5,"network":0.94}
+{"class":"Dropper","entropy":0.60,"imports":0.34,"wx_section":0.0,"packer":0.81,"injection":0.5,"network":0.96}
+{"class":"Benign","entropy":0.39,"imports":0.22,"wx_section":0.0,"packer":0.0,"injection":0.0,"network":0.0}
