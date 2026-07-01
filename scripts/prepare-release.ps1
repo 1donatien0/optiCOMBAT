@@ -55,6 +55,15 @@ if (-not $SkipFetch) {
     }
 }
 
+Invoke-Step 'Assets branding (Combat Aqua)' {
+    python (Join-Path $root 'scripts\generate-brand-assets.py')
+    if ($LASTEXITCODE -ne 0) { throw 'generate-brand-assets.py a echoue.' }
+}
+
+Invoke-Step 'Vider dossier publish (avant publish)' {
+    & (Join-Path $root 'scripts\clear-publish-dir.ps1') -PublishDir $pubDir
+}
+
 if (-not $SkipTests) {
     Write-Host "`n=== Exclusions Defender (dev) ===" -ForegroundColor Cyan
     & (Join-Path $root 'scripts\add-defender-exclusions.ps1') -InstallDir $root -DevWorkspace
@@ -108,6 +117,12 @@ if ($Sign -or $env:OPTICOMBAT_SIGN_THUMBPRINT) {
 }
 
 if (-not $SkipInstaller) {
+    Invoke-Step 'Vider sortie installateur (avant Inno)' {
+        & (Join-Path $root 'scripts\clear-installer-output.ps1')
+    }
+    Invoke-Step 'Icone installateur (Combat Aqua)' {
+        & (Join-Path $root 'scripts\sync-installer-icon.ps1')
+    }
     Invoke-Step 'Installateur Inno' {
         $build = Join-Path $root 'installer\build-release-setup.ps1'
         if ($SelfContained) {

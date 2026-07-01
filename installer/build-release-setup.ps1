@@ -21,6 +21,8 @@ $publishCandidates = @(
     (Join-Path $root 'publish\win-x64')
 )
 $cleanScript = Join-Path $root 'scripts\clean-before-publish.ps1'
+$clearPublishScript = Join-Path $root 'scripts\clear-publish-dir.ps1'
+$clearInstallerScript = Join-Path $root 'scripts\clear-installer-output.ps1'
 $verifyScript = Join-Path $root 'scripts\verify-runtime-deps.ps1'
 
 if (-not (Test-Path -LiteralPath $csproj)) { throw "Introuvable : $csproj" }
@@ -46,9 +48,10 @@ $publishExe = Join-Path $targetPublishDir 'optiCombat.exe'
 $staleFlatPublish = Join-Path (Split-Path $targetPublishDir -Parent) 'optiCombat.exe'
 
 if (-not $SkipPublish) {
-    if (-not (Test-Path -LiteralPath $cleanScript)) { throw "Introuvable : $cleanScript" }
-    & $cleanScript -Configuration Release -IncludeObj -IncludeCiPublish
-    if ($LASTEXITCODE -ne 0) { throw "clean-before-publish a echoue (code $LASTEXITCODE)." }
+    if (-not (Test-Path -LiteralPath $clearPublishScript)) { throw "Introuvable : $clearPublishScript" }
+    Write-Host 'Vidage du dossier publish avant publication...' -ForegroundColor Cyan
+    & $clearPublishScript -PublishDir $defaultPublishDir
+    if ($LASTEXITCODE -ne 0) { throw "clear-publish-dir a echoue (code $LASTEXITCODE)." }
     Write-Host 'dotnet publish (Release, FolderProfile-SelfContained -> publish\win-x64)...' -ForegroundColor Cyan
     dotnet publish $csproj -c Release /p:PublishProfile=FolderProfile-SelfContained
     if ($LASTEXITCODE -ne 0) { throw "dotnet publish a echoue (code $LASTEXITCODE)." }
@@ -93,6 +96,19 @@ $iscc = @(
 ) | Where-Object { Test-Path $_ } | Select-Object -First 1
 
 if (-not $iscc) { throw 'ISCC.exe introuvable. Installez Inno Setup 6.' }
+
+if (Test-Path -LiteralPath $clearInstallerScript) {
+    Write-Host 'Vidage sortie installateur avant compilation Inno...' -ForegroundColor Cyan
+    & $clearInstallerScript
+    if ($LASTEXITCODE -ne 0) { throw "clear-installer-output a echoue (code $LASTEXITCODE)." }
+}
+
+$syncIconScript = Join-Path $root 'scripts\sync-installer-icon.ps1'
+if (Test-Path -LiteralPath $syncIconScript) {
+    Write-Host 'Synchronisation icone installateur...' -ForegroundColor Cyan
+    & $syncIconScript
+    if ($LASTEXITCODE -ne 0) { throw "sync-installer-icon a echoue (code $LASTEXITCODE)." }
+}
 
 $outDir = Join-Path $PSScriptRoot 'output'
 New-Item -ItemType Directory -Force -Path $outDir | Out-Null

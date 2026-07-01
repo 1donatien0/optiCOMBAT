@@ -16,10 +16,12 @@ SRC_WORDMARK = BRAND / "optiCombat_logo_horizontal.png"
 
 
 def pick_shield_source() -> Path:
-    for path in (SRC_SHIELD_HERO, SRC_SHIELD):
-        if path.exists():
-            return path
-    raise SystemExit(f"Missing shield source: {SRC_SHIELD_HERO} or {SRC_SHIELD}")
+    """Emblème Combat Aqua officiel (assets/branding)."""
+    if SRC_SHIELD.exists():
+        return SRC_SHIELD
+    if SRC_SHIELD_HERO.exists():
+        return SRC_SHIELD_HERO
+    raise SystemExit(f"Missing shield source: {SRC_SHIELD} or {SRC_SHIELD_HERO}")
 
 
 def trim_content(im: Image.Image, threshold: int = 22) -> Image.Image:
@@ -199,8 +201,12 @@ def load_wordmark() -> Image.Image:
         fallback = BRAND / "optiCombat_logo_wordmark.png"
         if not fallback.exists():
             raise SystemExit(f"Missing wordmark source: {SRC_WORDMARK}")
-        return add_margin(trim_content(Image.open(fallback).convert("RGBA")), ratio=0.04)
-    return add_margin(trim_content(Image.open(SRC_WORDMARK).convert("RGBA")), ratio=0.03)
+        raw = Image.open(fallback).convert("RGBA")
+    else:
+        raw = Image.open(SRC_WORDMARK).convert("RGBA")
+    wordmark = remove_matte_background(raw, tolerance=20)
+    wordmark = trim_alpha(wordmark, pad_ratio=0.03)
+    return add_margin(wordmark, ratio=0.03)
 
 
 def fit_banner(
@@ -223,17 +229,85 @@ def fit_banner(
     return canvas
 
 
+def fit_banner_cover(
+    im: Image.Image,
+    width: int,
+    height: int,
+) -> Image.Image:
+    """Remplit toute la bannière (recadrage) — occupe 100 % de la zone d'affichage."""
+    trimmed = trim_content(im.convert("RGBA"))
+    iw, ih = trimmed.size
+    scale = max(width / iw, height / ih)
+    nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
+    scaled = trimmed.resize((nw, nh), Image.Resampling.LANCZOS)
+    x = max(0, (nw - width) // 2)
+    y = max(0, (nh - height) // 2)
+    return scaled.crop((x, y, x + width, y + height))
+
+
+def shield_circle_bounds(im: Image.Image) -> tuple[int, int, int, int]:
+    """BBox du cercle décoratif autour du bouclier (zone gauche du wordmark)."""
+    im = im.convert("RGBA")
+    px = im.load()
+    w, h = im.size
+    xs: list[int] = []
+    ys: list[int] = []
+    limit = int(w * 0.42)
+    for y in range(h):
+        for x in range(limit):
+            r, g, b, a = px[x, y]
+            if a > 25 and b > 110 and g > 70 and (b - r) > 15:
+                xs.append(x)
+                ys.append(y)
+    if not xs:
+        return 0, 0, w - 1, h - 1
+    return min(xs), min(ys), max(xs), max(ys)
+
+
+def fit_banner_home(
+    im: Image.Image,
+    width: int,
+    height: int,
+    pad_px: int = 10,
+) -> Image.Image:
+    """Logo accueil transparent, proportions conservées, cercle visible, aligné à droite."""
+    trimmed = trim_alpha(im.convert("RGBA"), pad_ratio=0.02)
+    iw, ih = trimmed.size
+    _, cy0, _, cy1 = shield_circle_bounds(trimmed)
+    ring_pad = max(4, int((cy1 - cy0 + 1) * 0.06))
+    cy0 = max(0, cy0 - ring_pad)
+    cy1 = min(ih - 1, cy1 + ring_pad)
+    circle_h = cy1 - cy0 + 1
+
+    scale = (height - 2 * pad_px) / circle_h
+    max_w = int(width * 0.72)
+    if iw * scale > max_w:
+        scale = max_w / iw
+
+    nw, nh = max(1, int(iw * scale)), max(1, int(ih * scale))
+    scaled = trimmed.resize((nw, nh), Image.Resampling.LANCZOS)
+    canvas = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    x = width - nw
+    if nh > height:
+        y = int(pad_px - cy0 * scale)
+        y = max(height - nh, min(0, y))
+    else:
+        y = (height - nh) // 2
+    canvas.paste(scaled, (x, y), scaled)
+    return canvas
+
+
 def composite_app_icon(emblem: Image.Image, size: int = 256) -> Image.Image:
-    """Emblème sur fond sombre arrondi (sidebar + .ico)."""
-    emblem = add_margin(trim_content(emblem), ratio=0.04 if size >= 64 else 0.02)
+    """Emblème pour .ico (fond navy discret, bouclier bien visible)."""
+    emblem = add_margin(trim_content(emblem), ratio=0.02)
     canvas = Image.new("RGBA", (size, size), (0, 0, 0, 0))
-    bg = Image.new("RGBA", (size, size), (22, 22, 28, 255))
-    radius = max(2, int(size * 0.20))
+    bg = Image.new("RGBA", (size, size), (14, 26, 34, 255))
+    radius = max(2, int(size * 0.18))
     mask = Image.new("L", (size, size), 0)
     ImageDraw.Draw(mask).rounded_rectangle((0, 0, size - 1, size - 1), radius=radius, fill=255)
     canvas.paste(bg, (0, 0), mask)
 
-    margin_ratio = 0.14 if size >= 128 else 0.11 if size >= 48 else 0.06 if size >= 32 else 0.04
+    margin_ratio = 0.06 if size >= 128 else 0.05 if size >= 48 else 0.04
     margin = max(1, int(size * margin_ratio))
     inner = size - margin * 2
     iw, ih = emblem.size
@@ -242,6 +316,11 @@ def composite_app_icon(emblem: Image.Image, size: int = 256) -> Image.Image:
     em = emblem.resize((nw, nh), Image.Resampling.LANCZOS)
     canvas.paste(em, ((size - nw) // 2, (size - nh) // 2), em)
     return canvas
+
+
+def emblem_badge(emblem: Image.Image, size: int, margin_ratio: float = 0.02) -> Image.Image:
+    """Emblème seul, fond transparent — sidebar et hero (bouclier lisible)."""
+    return fit_square(add_margin(trim_content(emblem), ratio=0.02), size, margin_ratio=margin_ratio)
 
 
 def resize_icon_layer(source: Image.Image, size: int) -> Image.Image:
@@ -253,9 +332,15 @@ def resize_icon_layer(source: Image.Image, size: int) -> Image.Image:
 
 
 def save_ico(path: Path, emblem: Image.Image, sizes: tuple[int, ...] = (16, 32, 48, 64, 128, 256)) -> None:
-    ordered = sorted(sizes, reverse=True)
+    """ICO Windows multi-resolutions (16–256 px) pour Explorateur et installateur."""
+    ordered = sorted(sizes)
     layers = [resize_icon_layer(emblem, s) for s in ordered]
-    layers[0].save(path, format="ICO", append_images=layers[1:])
+    layers[-1].save(
+        path,
+        format="ICO",
+        sizes=[(s, s) for s in ordered],
+        append_images=layers[:-1],
+    )
 
 
 def main() -> None:
@@ -271,9 +356,9 @@ def main() -> None:
     wordmark.save(BRAND / "optiCombat_logo_wordmark.png")
 
     hero_size = min(1024, max(512, max(shield_hero.size)))
-    fit_square(shield_hero, hero_size, margin_ratio=0.03).save(OUT / "optiCombat_hero.png")
-    composite_app_icon(emblem, 256).save(OUT / "optiCombat_shield.png")
-    fit_banner(wordmark, 880, 220, margin_ratio=0.04).save(OUT / "optiCombat.png")
+    emblem_badge(shield_hero, hero_size, margin_ratio=0.01).save(OUT / "optiCombat_hero.png")
+    emblem_badge(emblem, 256, margin_ratio=0.02).save(OUT / "optiCombat_shield.png")
+    fit_banner_home(wordmark, 1680, 420, pad_px=10).save(OUT / "optiCombat.png")
     fit_square(emblem, 256, margin_ratio=0.08).save(BRAND / "optiCombat_emblem_256.png")
 
     save_ico(OUT / "optiCombat.ico", emblem)

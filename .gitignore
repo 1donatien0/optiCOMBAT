@@ -132,3 +132,24 @@ installer/output/
 
 # Échantillons EICAR temporaires (tests d'intégration YARA)
 .eicar-test/
+
+# Sorties de build .NET (bin/obj) — ne jamais versionner
+[Bb]in/
+[Oo]bj/
+
+# Scripts de signature utilitaires (dev local)
+scripts/_sign-all.cmd
+scripts/_sign-all.ps1
+
+# Certificats / clés (jamais sur le dépôt)
+*.cer
+*.crt
+*.key
+*.pem
+
+# Scripts d'extraction / génération d'icônes (outillage local uniquement)
+scripts/extract-exe-icon.ps1
+scripts/generate-brand-assets.py
+scripts/refresh-shell-icons.ps1
+scripts/sync-installer-icon.ps1
+scripts/__pycache__/

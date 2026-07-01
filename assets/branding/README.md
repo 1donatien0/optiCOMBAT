@@ -4,8 +4,8 @@ Marque **optiCOMBAT** / **OPTICOMBAT** ; binaires et dossiers `optiCombat.*`.
 
 | Fichier | Usage |
 |---------|--------|
-| `optiCombat_emblem_source.png` | Emblème (hero, sidebar, .ico) |
-| `optiCombat_logo_horizontal.png` | Logo horizontal (emblème + OPTICOMBAT + tagline) |
+| `optiCombat_emblem_source.png` | Emblème Combat Aqua (hero, sidebar, .ico) |
+| `optiCombat_logo_horizontal.png` | Logo horizontal (OPTICOMBAT + tagline) |
 
 ## Régénérer les assets UI
 

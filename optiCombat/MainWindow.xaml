@@ -34,8 +34,8 @@
                 <!-- Logo compact (favicon OPTICOMBAT) -->
                 <StackPanel DockPanel.Dock="Top" Margin="0,18,0,10"
                             HorizontalAlignment="Center">
-                    <Image Source="/optiCombat;component/optiCombat_shield.png"
-                           Width="48" Height="48"
+                    <Image Source="/optiCombat;component/optiCombat_hero.png"
+                           Width="52" Height="52"
                            HorizontalAlignment="Center" VerticalAlignment="Center"
                            RenderOptions.BitmapScalingMode="HighQuality"/>
                 </StackPanel>

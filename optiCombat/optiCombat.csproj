@@ -85,7 +85,17 @@
     </ItemGroup>
     <Copy SourceFiles="@(_BrandAsset->'$(MSBuildProjectDirectory)\%(Identity)')"
           DestinationFolder="$(OutputPath)"
-          SkipUnchangedFiles="true"
+          SkipUnchangedFiles="false"
+          Condition="Exists('$(MSBuildProjectDirectory)\%(Identity)')" />
+  </Target>
+
+  <Target Name="CopyBrandAssetsToPublish" AfterTargets="Publish">
+    <ItemGroup>
+      <_BrandAssetPub Include="optiCombat.ico;ico.ico;optiCombat.png;optiCombat_hero.png;optiCombat_shield.png" />
+    </ItemGroup>
+    <Copy SourceFiles="@(_BrandAssetPub->'$(MSBuildProjectDirectory)\%(Identity)')"
+          DestinationFolder="$(PublishDir)"
+          SkipUnchangedFiles="false"
           Condition="Exists('$(MSBuildProjectDirectory)\%(Identity)')" />
   </Target>
 

@@ -14,7 +14,12 @@
 #define AppURL         "https://sourceforge.net/projects/opticombat/"
 #define AppExeName     "optiCombat.exe"
 #define AppId          "{{F3A2C1D0-5B6E-4F7A-8C9D-0E1F2A3B4C5D}"
-#define AppIconFile    "..\optiCombat\optiCombat.ico"
+#define AppIconFile    "optiCombat.ico"
+#if FileExists(AddBackslash(SourcePath) + AppIconFile)
+  ; ok
+#else
+  #expr Error("Icone installateur absente : copiez optiCombat.ico dans installer\ (scripts\sync-installer-icon.ps1)")
+#endif
 
 ; ── ISPP : emplacement de publish (VS / dotnet peuvent sortir dans publish\win-x64\ ou publish\)
 ; Préférer win-x64 en premier : c'est la sortie d'un « dotnet publish -r win-x64 » / profil dossier,

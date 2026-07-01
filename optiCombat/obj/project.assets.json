@@ -2617,7 +2617,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\a33e0e7d3b87268116b3fada208e0e1c\\nuget": {},
+    "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
@@ -2626,7 +2626,7 @@
       "projectUniqueName": "D:\\Projets\\optiCombat\\optiCombat\\optiCombat.csproj",
       "projectName": "optiCombat",
       "projectPath": "D:\\Projets\\optiCombat\\optiCombat\\optiCombat.csproj",
-      "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\a33e0e7d3b87268116b3fada208e0e1c\\nuget",
+      "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget",
       "outputPath": "D:\\Projets\\optiCombat\\optiCombat\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [

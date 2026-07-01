@@ -3,12 +3,16 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:md="http://materialdesigninxaml.net/winfx/xaml/themes"
              xmlns:strings="clr-namespace:optiCombat.Strings"
-             xmlns:loc="clr-namespace:optiCombat.Localization">
+             xmlns:loc="clr-namespace:optiCombat.Localization"
+             UseLayoutRounding="True"
+             SnapsToDevicePixels="True"
+             TextOptions.TextFormattingMode="Display"
+             TextOptions.TextRenderingMode="ClearType">
 
     <Grid Background="Transparent">
         <Grid.RowDefinitions>
             <!-- Hero shield zone -->
-            <RowDefinition Height="220"/>
+            <RowDefinition Height="240"/>
             <!-- Actions bar -->
             <RowDefinition Height="Auto"/>
             <!-- Bandeau UAC (masqué si admin) -->
@@ -18,7 +22,7 @@
         </Grid.RowDefinitions>
 
         <!-- ══════════════════════════════════════════════════════
-             HERO — Cadran de scan circulaire + statut épuré
+             HERO — statut (gauche) · logo OPTICOMBAT (droite)
         ══════════════════════════════════════════════════════ -->
         <Border Grid.Row="0" Margin="24,20,24,0"
                 Background="{DynamicResource CardBg}"
@@ -27,99 +31,26 @@
                 CornerRadius="16"
                 Padding="28,16"
                 Effect="{DynamicResource CardShadow}">
-            <Grid>
+            <Grid UseLayoutRounding="True" SnapsToDevicePixels="True">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*" MinWidth="200"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- ── Cadran circulaire OPTICOMBAT (anneau dégradé vert→bleu) — à droite ── -->
-                <Grid Grid.Column="1" Width="180" Height="180"
-                      VerticalAlignment="Center" HorizontalAlignment="Center"
-                      Margin="8,0,0,0">
-                    <!-- Lueur diffuse derrière l'anneau -->
-                    <Ellipse Width="172" Height="172"
-                             Fill="{DynamicResource AccentBg}" Opacity="0.55"/>
-                    <!-- Anneau de fond (piste) -->
-                    <Ellipse Width="168" Height="168"
-                             Stroke="{DynamicResource BorderSubtle}"
-                             StrokeThickness="10"/>
-                    <!-- Anneau accent dégradé (vert → teal → bleu), pulsation douce -->
-                    <Ellipse x:Name="scanRing" Width="168" Height="168"
-                             Stroke="{DynamicResource AccentGradient}"
-                             StrokeThickness="10"
-                             StrokeDashArray="9.2 1.0"
-                             StrokeDashCap="Round"
-                             RenderTransformOrigin="0.5,0.5">
-                        <Ellipse.Effect>
-                            <DropShadowEffect Color="#1FC8A2" Opacity="0.5"
-                                              BlurRadius="18" ShadowDepth="0"/>
-                        </Ellipse.Effect>
-                        <Ellipse.RenderTransform>
-                            <RotateTransform x:Name="scanRingRotate" Angle="0"/>
-                        </Ellipse.RenderTransform>
-                        <Ellipse.Triggers>
-                            <EventTrigger RoutedEvent="Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard RepeatBehavior="Forever">
-                                        <DoubleAnimation Storyboard.TargetName="scanRingRotate"
-                                                         Storyboard.TargetProperty="Angle"
-                                                         From="0" To="360" Duration="0:0:24"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Ellipse.Triggers>
-                    </Ellipse>
-                    <!-- Disque intérieur + bouclier animé -->
-                    <Image x:Name="shieldImage"
-                           Source="/optiCombat;component/optiCombat_shield.png"
-                           Width="86"
-                           Stretch="Uniform"
-                           HorizontalAlignment="Center" VerticalAlignment="Center"
-                           RenderOptions.BitmapScalingMode="HighQuality">
-                        <Image.RenderTransformOrigin>0.5,0.5</Image.RenderTransformOrigin>
-                        <Image.RenderTransform>
-                            <ScaleTransform x:Name="shieldPulseScale" ScaleX="1" ScaleY="1"/>
-                        </Image.RenderTransform>
-                        <Image.Triggers>
-                            <EventTrigger RoutedEvent="Loaded">
-                                <BeginStoryboard>
-                                    <Storyboard RepeatBehavior="Forever" AutoReverse="True">
-                                        <DoubleAnimation Storyboard.TargetName="shieldPulseScale"
-                                                         Storyboard.TargetProperty="ScaleX"
-                                                         From="1" To="1.05" Duration="0:0:2.4"/>
-                                        <DoubleAnimation Storyboard.TargetName="shieldPulseScale"
-                                                         Storyboard.TargetProperty="ScaleY"
-                                                         From="1" To="1.05" Duration="0:0:2.4"/>
-                                    </Storyboard>
-                                </BeginStoryboard>
-                            </EventTrigger>
-                        </Image.Triggers>
-                    </Image>
-                    <!-- Badge coche succès (bas-droite du cadran) -->
-                    <Border Width="34" Height="34" CornerRadius="17"
-                            Background="{DynamicResource SuccessGreen}"
-                            HorizontalAlignment="Right" VerticalAlignment="Bottom"
-                            Margin="0,0,14,14"
-                            Effect="{DynamicResource CardShadow}">
-                        <md:PackIcon Kind="Check" Width="20" Height="20"
-                                     Foreground="#FFFFFF"
-                                     HorizontalAlignment="Center" VerticalAlignment="Center"/>
-                    </Border>
-                </Grid>
-
-                <!-- ── Statut protection + appel à l'action — à gauche ── -->
-                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,24,0">
+                <!-- Statut protection + analyse -->
+                <StackPanel Grid.Column="0" VerticalAlignment="Center" Margin="0,0,20,0">
                     <TextBlock x:Name="txtProtectionHeadline"
                                Text="{loc:Loc Key=Overview_Protected}"
                                FontSize="26" FontWeight="SemiBold"
                                Foreground="{DynamicResource TextDark}"
-                               TextWrapping="Wrap"/>
+                               TextWrapping="NoWrap"
+                               TextOptions.TextFormattingMode="Display"/>
                     <TextBlock x:Name="txtProtectionSub"
                                Text="{loc:Loc Key=Overview_ProtectedSub}"
                                FontSize="{DynamicResource FontSize.Body}"
                                Foreground="{DynamicResource TextMuted}"
                                TextWrapping="Wrap"
+                               MaxWidth="400"
                                Margin="0,5,0,0"/>
                     <StackPanel Orientation="Horizontal" Margin="0,8,0,0">
                         <md:PackIcon Kind="ClockOutline" Width="13" Height="13"
@@ -136,7 +67,6 @@
                                    VerticalAlignment="Center"/>
                     </StackPanel>
 
-                    <!-- Bouton de scan principal -->
                     <Button Style="{StaticResource PrimaryButton}"
                             HorizontalAlignment="Left"
                             Margin="0,16,0,0" Padding="26,10"
@@ -149,6 +79,29 @@
                                        FontWeight="SemiBold" VerticalAlignment="Center"/>
                         </StackPanel>
                     </Button>
+                </StackPanel>
+
+                <!-- Logo OPTICOMBAT — emblème net + wordmark vectoriel (adaptatif thème) -->
+                <StackPanel Grid.Column="1" Orientation="Horizontal"
+                            VerticalAlignment="Center" HorizontalAlignment="Right"
+                            Margin="8,0,0,0">
+                    <!-- Emblème teal (fond transparent, anneau + coche intégrés) -->
+                    <Image Source="/optiCombat;component/optiCombat_hero.png"
+                           Stretch="Uniform" Height="128"
+                           VerticalAlignment="Center"
+                           RenderOptions.BitmapScalingMode="HighQuality"
+                           SnapsToDevicePixels="True"/>
+                    <!-- Wordmark texte : OPTI (neutre) + COMBAT (dégradé accent) + slogan -->
+                    <StackPanel VerticalAlignment="Center" Margin="16,0,4,0">
+                        <TextBlock FontFamily="Segoe UI" FontSize="44" FontWeight="Bold"
+                                   TextOptions.TextFormattingMode="Ideal">
+                            <Run Text="opti" Foreground="{DynamicResource TextDark}"/><Run Text="COMBAT" Foreground="{DynamicResource AccentBlue}"/>
+                        </TextBlock>
+                        <TextBlock Text="PROTECT  •  DETECT  •  DEFEND"
+                                   FontFamily="Segoe UI" FontSize="14" FontWeight="SemiBold"
+                                   Foreground="{DynamicResource TextMuted}"
+                                   Margin="3,3,0,0"/>
+                    </StackPanel>
                 </StackPanel>
             </Grid>
         </Border>
@@ -351,64 +304,75 @@
                         <RowDefinition Height="Auto"/>
                         <RowDefinition Height="*"/>
                     </Grid.RowDefinitions>
-                    <StackPanel Grid.Row="0">
-                        <TextBlock Text="{loc:Loc Key=Overview_Recommendations}"
-                                   FontSize="{DynamicResource FontSize.Title}" FontWeight="SemiBold"
-                                   Foreground="{DynamicResource TextDark}" Margin="0,0,0,10"/>
 
-                        <Border Background="{DynamicResource SurfaceBg}"
-                                CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Key=Posture_Title}"
-                                           FontSize="{DynamicResource FontSize.Caption}" FontWeight="Bold"
-                                           Foreground="{DynamicResource TextMuted}"/>
-                                <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
-                                    <TextBlock x:Name="txtSecurityScore"
-                                               Text="—"
-                                               FontSize="28" FontWeight="Bold"
-                                               Foreground="{DynamicResource TextAccent}"
-                                               VerticalAlignment="Center"/>
-                                    <TextBlock Text="/100"
-                                               FontSize="{DynamicResource FontSize.Small}"
-                                               Foreground="{DynamicResource TextMuted}"
-                                               VerticalAlignment="Bottom" Margin="4,0,0,5"/>
+                    <TextBlock Grid.Row="0"
+                               Text="{loc:Loc Key=Overview_Recommendations}"
+                               FontSize="{DynamicResource FontSize.Title}" FontWeight="SemiBold"
+                               Foreground="{DynamicResource TextDark}" Margin="0,0,0,10"/>
+
+                    <!-- Le contenu peut dépasser la hauteur de la carte (plusieurs
+                         recommandations, plusieurs composants plateforme) : on le rend
+                         défilable au lieu de le laisser être rogné par les coins arrondis
+                         de la Border parente. -->
+                    <ScrollViewer Grid.Row="1"
+                                  VerticalScrollBarVisibility="Auto"
+                                  HorizontalScrollBarVisibility="Disabled"
+                                  Padding="0,0,4,0">
+                        <StackPanel>
+                            <Border Background="{DynamicResource SurfaceBg}"
+                                    CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Key=Posture_Title}"
+                                               FontSize="{DynamicResource FontSize.Caption}" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextMuted}"/>
+                                    <StackPanel Orientation="Horizontal" Margin="0,4,0,2">
+                                        <TextBlock x:Name="txtSecurityScore"
+                                                   Text="—"
+                                                   FontSize="28" FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextAccent}"
+                                                   VerticalAlignment="Center"/>
+                                        <TextBlock Text="/100"
+                                                   FontSize="{DynamicResource FontSize.Small}"
+                                                   Foreground="{DynamicResource TextMuted}"
+                                                   VerticalAlignment="Bottom" Margin="4,0,0,5"/>
+                                    </StackPanel>
+                                    <TextBlock x:Name="txtPostureSummary"
+                                               TextWrapping="Wrap"
+                                               FontSize="{DynamicResource FontSize.Micro}"
+                                               Foreground="{DynamicResource TextDark}"
+                                               LineHeight="14"
+                                               Visibility="Collapsed"/>
+                                    <StackPanel x:Name="postureIssuesPanel"/>
                                 </StackPanel>
-                                <TextBlock x:Name="txtPostureSummary"
-                                           TextWrapping="Wrap"
-                                           FontSize="{DynamicResource FontSize.Micro}"
-                                           Foreground="{DynamicResource TextDark}"
-                                           LineHeight="14"
-                                           Visibility="Collapsed"/>
-                                <StackPanel x:Name="postureIssuesPanel"/>
-                            </StackPanel>
-                        </Border>
+                            </Border>
 
-                        <Border Background="{DynamicResource SurfaceBg}"
-                                CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Key=Platform_StatusTitle}"
-                                           FontSize="{DynamicResource FontSize.Caption}" FontWeight="Bold"
-                                           Foreground="{DynamicResource TextMuted}"/>
-                                <StackPanel x:Name="platformStatusPanel" Margin="0,6,0,0"/>
-                            </StackPanel>
-                        </Border>
+                            <Border Background="{DynamicResource SurfaceBg}"
+                                    CornerRadius="8" Padding="10,8" Margin="0,0,0,8">
+                                <StackPanel>
+                                    <TextBlock Text="{loc:Loc Key=Platform_StatusTitle}"
+                                               FontSize="{DynamicResource FontSize.Caption}" FontWeight="Bold"
+                                               Foreground="{DynamicResource TextMuted}"/>
+                                    <StackPanel x:Name="platformStatusPanel" Margin="0,6,0,0"/>
+                                </StackPanel>
+                            </Border>
 
-                        <Border x:Name="brRecHygiene" Background="{DynamicResource AlertBg}"
-                                CornerRadius="8" Padding="10,8">
-                            <Grid>
-                                <Grid.ColumnDefinitions>
-                                    <ColumnDefinition Width="Auto"/>
-                                    <ColumnDefinition Width="*"/>
-                                </Grid.ColumnDefinitions>
-                                <md:PackIcon x:Name="icRecHygiene" Grid.Column="0" Kind="Broom" Width="14" Height="14"
-                                             Foreground="{DynamicResource AlertGoldLight}"
-                                             VerticalAlignment="Top" Margin="0,1,0,0"/>
-                                <TextBlock x:Name="txtRecHygiene" Grid.Column="1" Text="{loc:Loc Key=Overview_RecHygiene}"
-                                           FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource AlertGold}"
-                                           LineHeight="16" TextWrapping="Wrap" Margin="6,0,0,0"/>
-                            </Grid>
-                        </Border>
-                    </StackPanel>
+                            <Border x:Name="brRecHygiene" Background="{DynamicResource AlertBg}"
+                                    CornerRadius="8" Padding="10,8">
+                                <Grid>
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="Auto"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <md:PackIcon x:Name="icRecHygiene" Grid.Column="0" Kind="Broom" Width="14" Height="14"
+                                                 Foreground="{DynamicResource AlertGoldLight}"
+                                                 VerticalAlignment="Top" Margin="0,1,0,0"/>
+                                    <TextBlock x:Name="txtRecHygiene" Grid.Column="1" Text="{loc:Loc Key=Overview_RecHygiene}"
+                                               FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource AlertGold}"
+                                               LineHeight="16" TextWrapping="Wrap" Margin="6,0,0,0"/>
+                                </Grid>
+                            </Border>
+                        </StackPanel>
+                    </ScrollViewer>
                 </Grid>
             </Border>
 
