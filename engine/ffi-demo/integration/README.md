@@ -30,6 +30,6 @@ dans le build par défaut pour ne pas imposer la DLL native ni risquer la chaîn
 
 ## Ce qui ne change pas
 
-`ScanOrchestrator`, `QuarantineManager`, l'UI WPF (Donaby Design), le RTP et le
+`ScanOrchestrator`, `QuarantineManager`, l'UI WinUI 3 (shell principal) / WPF legacy (Donaby Design), le RTP et le
 service consomment `IScanEngine` **inchangé** : seule l'implémentation derrière
 l'interface est remplacée. C'est l'aboutissement de la stratégie *strangler fig*.

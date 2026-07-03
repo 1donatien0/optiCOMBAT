@@ -5,6 +5,7 @@
 | Document | Contenu |
 |----------|---------|
 | [README.md](../README.md) | Présentation et démarrage rapide |
+| [MIGRATION_WINUI3.md](MIGRATION_WINUI3.md) | Migration WinUI 3 (branche `dev`) |
 | [GUIDE_COMPLET.md](GUIDE_COMPLET.md) | Architecture, interface, publication |
 | [CONTRIBUTING.md](../CONTRIBUTING.md) | Build, tests, contributions |
 | [CHANGELOG.md](../CHANGELOG.md) | Notes de version |

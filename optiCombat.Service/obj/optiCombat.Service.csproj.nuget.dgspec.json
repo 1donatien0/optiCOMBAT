@@ -10,7 +10,7 @@
         "projectUniqueName": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
         "projectName": "optiCombat.Platform",
         "projectPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
-        "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget",
+        "packagesPath": "C:\\Users\\BYAKOMBE\\.nuget\\packages\\",
         "outputPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
@@ -37,7 +37,6 @@
           }
         },
         "warningProperties": {
-          "allWarningsAsErrors": true,
           "warnAsError": [
             "NU1605"
           ]
@@ -79,11 +78,6 @@
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
         }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
-        }
       }
     },
     "D:\\Projets\\optiCombat\\optiCombat.Service\\optiCombat.Service.csproj": {
@@ -92,7 +86,7 @@
         "projectUniqueName": "D:\\Projets\\optiCombat\\optiCombat.Service\\optiCombat.Service.csproj",
         "projectName": "optiCombat.Service",
         "projectPath": "D:\\Projets\\optiCombat\\optiCombat.Service\\optiCombat.Service.csproj",
-        "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget",
+        "packagesPath": "C:\\Users\\BYAKOMBE\\.nuget\\packages\\",
         "outputPath": "D:\\Projets\\optiCombat\\optiCombat.Service\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
@@ -123,7 +117,6 @@
           }
         },
         "warningProperties": {
-          "allWarningsAsErrors": true,
           "warnAsError": [
             "NU1605"
           ]
@@ -177,11 +170,6 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }

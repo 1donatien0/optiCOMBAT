@@ -1,0 +1,93 @@
+<UserControl
+    x:Class="optiCombat.WinUI.Views.CleanPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Padding="24,20" RowSpacing="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="20,16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="4">
+                <TextBlock FontSize="24" FontWeight="SemiBold" Text="Nettoyer" />
+                <TextBlock Foreground="{StaticResource TextMutedBrush}" Text="Libérez de l'espace — fichiers temporaires et caches navigateurs" />
+            </StackPanel>
+        </Border>
+
+        <Grid Grid.Row="1" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Padding="16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Temporaires système" />
+                    <TextBlock x:Name="TempSizeText" FontSize="22" FontWeight="Bold" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Text="Caches navigateurs" />
+                    <TextBlock x:Name="BrowserSizeText" FontSize="22" FontWeight="Bold" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="16" Background="{StaticResource AccentBrush}" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Foreground="White" Text="Total récupérable" />
+                    <TextBlock x:Name="TotalSizeText" FontSize="22" FontWeight="Bold" Foreground="White" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="2" Orientation="Horizontal" Spacing="10">
+            <Button Click="Analyze_Click" Content="Analyser" x:Name="AnalyzeButton" />
+            <Button Click="Clean_Click" Content="Nettoyer maintenant" Background="{StaticResource AccentBrush}" Foreground="White" x:Name="CleanButton" IsEnabled="False" />
+            <ProgressRing x:Name="BusyRing" Width="24" Height="24" Visibility="Collapsed" />
+        </StackPanel>
+
+        <Grid Grid.Row="3" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+                <ScrollViewer>
+                    <StackPanel Spacing="12">
+                        <TextBlock FontWeight="SemiBold" Text="Système" />
+                        <CheckBox x:Name="ChkTempWin" Content="Temp Windows" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkTempUser" Content="Temp utilisateur" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkRecycle" Content="Corbeille" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkLogs" Content="Journaux Windows" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <TextBlock FontWeight="SemiBold" Margin="0,8,0,0" Text="Navigateurs" />
+                        <CheckBox x:Name="ChkEdge" Content="Microsoft Edge" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkChrome" Content="Google Chrome" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkFirefox" Content="Mozilla Firefox" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkBrave" Content="Brave" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkOpera" Content="Opera" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkVivaldi" Content="Vivaldi" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkArc" Content="Arc" Checked="Option_Changed" Unchecked="Option_Changed" />
+                    </StackPanel>
+                </ScrollViewer>
+            </Border>
+
+            <Border Grid.Column="1" Padding="16" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <TextBlock FontWeight="SemiBold" Text="Journal" />
+                    <ScrollViewer Grid.Row="1">
+                        <TextBlock x:Name="LogText" FontFamily="Consolas" FontSize="12" TextWrapping="WrapWholeWords" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+</UserControl>

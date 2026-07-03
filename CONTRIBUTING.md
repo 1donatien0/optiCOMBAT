@@ -25,9 +25,16 @@ Ne commitez **jamais** : `.pfx`, `.env`, secrets, bases ClamAV `.cvd`, `installe
 
 ## Branche et commits
 
-- Branche **`main`** ou feature `feature/...`
+- Branche de développement **`dev`** (WinUI 3) ; **`main`** pour les releases stables
+- Branches feature : `feature/...`
 - Messages de commit clairs (français ou anglais)
 - Commits du dépôt officiel : auteur **1donatien0**
+
+## Lancer l’UI (dev)
+
+```powershell
+dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
+```
 
 ## Pull requests
 

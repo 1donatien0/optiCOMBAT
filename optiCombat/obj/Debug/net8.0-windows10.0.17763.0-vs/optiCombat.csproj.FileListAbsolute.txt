@@ -104,7 +104,6 @@ D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCom
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.runtimeconfig.json
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.pdb
-D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\en\optiCombat.resources.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\MaterialDesignColors.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\MaterialDesignThemes.Wpf.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\Microsoft.Extensions.DependencyInjection.dll
@@ -140,8 +139,11 @@ D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\runtime
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\runtimes\win\lib\net8.0\System.ServiceProcess.ServiceController.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\Microsoft.Windows.SDK.NET.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\WinRT.Runtime.dll
+D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Application.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Platform.dll
 D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Platform.pdb
+D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Application.pdb
+D:\Projets\optiCombat\optiCombat\bin\Debug\net8.0-windows10.0.17763.0-vs\en\optiCombat.Application.resources.dll
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.csproj.AssemblyReference.cache
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\Styles\Controls.baml
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\Themes\Donaby.Dark.baml
@@ -166,14 +168,10 @@ D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\Views\H
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\Views\OptionsControl.baml
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\Views\OverviewControl.baml
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.g.resources
-D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Resources.UiStrings.resources
-D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.Resources.UiStrings.en.resources
-D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.csproj.GenerateResource.cache
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.GeneratedMSBuildEditorConfig.editorconfig
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.AssemblyInfoInputs.cache
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.AssemblyInfo.cs
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.csproj.CoreCompileInputs.cache
-D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\en\optiCombat.resources.dll
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.csproj.Up2Date
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\optiCombat.dll
 D:\Projets\optiCombat\optiCombat\obj\Debug\net8.0-windows10.0.17763.0-vs\refint\optiCombat.dll

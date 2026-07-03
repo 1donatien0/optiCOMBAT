@@ -6,7 +6,7 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:c="clr-namespace:optiCombat.Converters"
              xmlns:loc="clr-namespace:optiCombat.Localization"
-             xmlns:services="clr-namespace:optiCombat.Services"
+             xmlns:services="clr-namespace:optiCombat.Services;assembly=optiCombat.Application"
              mc:Ignorable="d"
              d:DesignHeight="650" d:DesignWidth="960">
 

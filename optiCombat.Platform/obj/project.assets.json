@@ -9,15 +9,6 @@
           "buildTransitive/Microsoft.CodeAnalysis.NetAnalyzers.targets": {}
         }
       }
-    },
-    "net8.0/win-x64": {
-      "Microsoft.CodeAnalysis.NetAnalyzers/9.0.0": {
-        "type": "package",
-        "build": {
-          "buildTransitive/Microsoft.CodeAnalysis.NetAnalyzers.props": {},
-          "buildTransitive/Microsoft.CodeAnalysis.NetAnalyzers.targets": {}
-        }
-      }
     }
   },
   "libraries": {
@@ -795,7 +786,7 @@
     ]
   },
   "packageFolders": {
-    "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget": {},
+    "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\69f88a0eaed2f796b8b4da410a21287d\\nuget": {},
     "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages": {}
   },
   "project": {
@@ -804,7 +795,7 @@
       "projectUniqueName": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
       "projectName": "optiCombat.Platform",
       "projectPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
-      "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget",
+      "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\69f88a0eaed2f796b8b4da410a21287d\\nuget",
       "outputPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
@@ -872,11 +863,6 @@
           }
         },
         "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
-      }
-    },
-    "runtimes": {
-      "win-x64": {
-        "#import": []
       }
     }
   }

@@ -1,0 +1,71 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <OutputType>WinExe</OutputType>
+    <TargetFramework>net8.0-windows10.0.19041.0</TargetFramework>
+    <TargetPlatformMinVersion>10.0.17763.0</TargetPlatformMinVersion>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <UseWinUI>true</UseWinUI>
+    <EnableMsixTooling>false</EnableMsixTooling>
+    <WindowsPackageType>None</WindowsPackageType>
+    <ApplicationManifest>..\optiCombat\app.manifest</ApplicationManifest>
+    <AssemblyName>optiCombat</AssemblyName>
+    <RootNamespace>optiCombat.WinUI</RootNamespace>
+    <Company>optiCombat</Company>
+    <Product>optiCombat v1.0 - WinUI 3</Product>
+    <Copyright>Copyright 2026 Dona By</Copyright>
+    <ApplicationIcon>..\optiCombat\optiCombat.ico</ApplicationIcon>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.WindowsAppSDK" Version="1.8.250907003" />
+    <PackageReference Include="System.Drawing.Common" Version="8.0.10" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.1" />
+    <PackageReference Include="Microsoft.Toolkit.Uwp.Notifications" Version="7.1.3" />
+    <PackageReference Include="QuestPDF" Version="2024.12.2" />
+    <PackageReference Include="System.Management" Version="8.0.0" />
+    <PackageReference Include="System.ServiceProcess.ServiceController" Version="8.0.1" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\optiCombat.Platform\optiCombat.Platform.csproj" />
+    <ProjectReference Include="..\optiCombat.Application\optiCombat.Application.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\optiCombat\optiCombat.ico" Link="Assets\optiCombat.ico">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\optiCombat_hero.png" Link="Assets\optiCombat_hero.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\optiCombat_shield.png" Link="Assets\optiCombat_shield.png">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+  <ItemGroup>
+    <Content Include="..\optiCombat\clamav\x64\**\*" Exclude="..\optiCombat\clamav\x64\**\*.conf">
+      <Link>clamav\x64\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\clamav\database\**\*">
+      <Link>clamav\database\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\clamav\certs\clamav.crt">
+      <Link>clamav\certs\clamav.crt</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\rules\**\*">
+      <Link>rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+    <Content Include="..\optiCombat\yara\**\*">
+      <Link>yara\%(RecursiveDir)%(Filename)%(Extension)</Link>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
+</Project>

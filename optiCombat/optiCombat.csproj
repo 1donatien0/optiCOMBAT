@@ -174,6 +174,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\optiCombat.Platform\optiCombat.Platform.csproj" />
+    <ProjectReference Include="..\optiCombat.Application\optiCombat.Application.csproj" />
   </ItemGroup>
 
 

@@ -102,21 +102,14 @@ public sealed class EicarIntegrationTests : IDisposable
 
     private IEnumerable<string> CandidateSampleDirectories()
     {
-        yield return Path.Combine(_sampleDir, "samples");
-
-        var repoRoot = ResolveRepoRoot();
-        if (repoRoot != null)
-            yield return Path.Combine(repoRoot, ".eicar-test", Guid.NewGuid().ToString("N"));
-
+        // Hors dépôt : en debug, OpticombatProtectedPaths exclut toute la racine du repo
+        // (TryAddDevWorkspaceRoot) — YaraEngine ignore alors le fichier alors que yara.exe CLI seul le voit.
         yield return Path.Combine(Path.GetTempPath(), "opticombat_eicar_" + Guid.NewGuid().ToString("N"));
+        yield return Path.Combine(_sampleDir, "samples");
     }
 
     private static string CreateSampleDirectory()
     {
-        var repoRoot = ResolveRepoRoot();
-        if (repoRoot != null)
-            return Path.Combine(repoRoot, ".eicar-test", "_run_" + Guid.NewGuid().ToString("N"));
-
         return Path.Combine(Path.GetTempPath(), "opticombat_eicar_" + Guid.NewGuid().ToString("N"));
     }
 
@@ -189,19 +182,6 @@ public sealed class EicarIntegrationTests : IDisposable
 
         throw new InvalidOperationException(
             "rules/test_rules.yar introuvable — exécuter les tests depuis la racine du dépôt.");
-    }
-
-    private static string? ResolveRepoRoot()
-    {
-        var dir = AppContext.BaseDirectory;
-        for (var i = 0; i < 10 && dir != null; i++)
-        {
-            if (File.Exists(Path.Combine(dir, "optiCombat.sln")))
-                return dir;
-            dir = Directory.GetParent(dir)?.FullName;
-        }
-
-        return null;
     }
 
     private static string? ResolveYaraBinDir()

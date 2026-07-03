@@ -180,9 +180,6 @@ namespace optiCombat.Views
                 if (txtSigThreshold != null)
                     txtSigThreshold.Text = prefs.SignatureStaleThresholdDays.ToString();
 
-                if (chkHighContrast != null)
-                    chkHighContrast.IsChecked = prefs.HighContrastEnabled;
-
                 _exclusions.Clear();
                 foreach (var path in ex.ExcludedFolders)
                     _exclusions.Add(path);
@@ -357,10 +354,6 @@ namespace optiCombat.Views
                 case "AlternateTheme":
                     ThemeManager.SetAlternateThemeEnabled(isOn);
                     SyncThemeControls();
-                    break;
-
-                case "HighContrast":
-                    ThemeManager.SetHighContrast(isOn);
                     break;
 
                 case "ScheduledScan":

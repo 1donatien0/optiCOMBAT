@@ -4,29 +4,7 @@ using System.Windows.Media.Animation;
 namespace optiCombat.Services
 {
     /// <summary>
-    /// Contrat de navigation entre les panneaux principaux.
-    /// Permet de découpler la logique de navigation de la MainWindow (SRP).
-    /// </summary>
-    public interface INavigationService
-    {
-        /// <summary>Nom du panneau actuellement affiché.</summary>
-        string CurrentView { get; }
-
-        /// <summary>Déclenché après chaque changement de vue.</summary>
-        event EventHandler<string>? Navigated;
-
-        /// <summary>Enregistre un panneau sous un nom de clé.</summary>
-        void RegisterPanel(string name, UIElement panel);
-
-        /// <summary>Rend visible le panneau correspondant, masque les autres.</summary>
-        void NavigateTo(string name);
-
-        /// <summary>Indique si un panneau est enregistré.</summary>
-        bool HasPanel(string name);
-    }
-
-    /// <summary>
-    /// Implémentation concrète de la navigation par visibilité WPF.
+    /// Implémentation WPF de <see cref="INavigationService"/>.
     /// Tous les panneaux sont gardés en mémoire ; seul le panneau actif est visible.
     /// </summary>
     public class NavigationService : INavigationService

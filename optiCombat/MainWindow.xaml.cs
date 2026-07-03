@@ -512,7 +512,7 @@ namespace optiCombat
                     _container.SignatureStatus,
                     panelOverview as IOverviewPanel,
                     panelAntivirus as IAntivirusSignaturesPanel,
-                    ViewModel,
+                    snapshot => { if (ViewModel != null) snapshot.ApplyToScanViewModel(ViewModel); },
                     RefreshOverviewProtectionAndRecommendations),
                 forceRefresh).ConfigureAwait(true);
         }

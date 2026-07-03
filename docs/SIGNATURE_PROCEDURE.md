@@ -14,7 +14,7 @@ Guide pratique pour signer optiCOMBAT. Un antivirus complet a **quatre** artefac
 
 | Artefact | Type | Chaîne de signature |
 |---|---|---|
-| `optiCombat.exe` | Exécutable WPF | Authenticode (ton certificat) |
+| `optiCombat.exe` | Exécutable WinUI 3 (shell principal) | Authenticode (ton certificat) |
 | Installeur `optiCombat_Setup_*.exe` | Inno Setup | Authenticode (ton certificat) |
 | `optiCombat.AmsiProvider.dll` | DLL user-mode (AMSI) | Authenticode (ton certificat) |
 | `optiCombat.Minifilter.sys` | **Pilote noyau** | **Microsoft** (via Partner Center) après signature EV |

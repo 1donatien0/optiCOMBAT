@@ -4,6 +4,11 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- Migration **WinUI 3** : shell principal `optiCombat.WinUI` (binaire `optiCombat.exe`), couche partagée `optiCombat.Application`, installateur ciblant le publish WinUI
+- Retrait de l’option **Contraste renforcé** dans Paramètres (WinUI et WPF) — réévaluation ultérieure
+
 ## [1.0.0] — 2026-06-26
 
 Première release publique sous la marque **optiCOMBAT**.

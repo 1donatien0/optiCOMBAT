@@ -1,6 +1,8 @@
 # optiCOMBAT v1.0
 
-Antivirus Windows open source — interface **WPF .NET 8**, moteurs **ClamAV** + **YARA**, cœur natif **Rust** (`opticombat.dll`), design **Donaby Combat Aqua**.
+Antivirus Windows open source — shell **WinUI 3** (.NET 8), moteurs **ClamAV** + **YARA**, cœur natif **Rust** (`opticombat.dll`), design **Donaby Combat Aqua**.
+
+> **Branche active** : `dev` — WinUI 3 est le shell principal ; le projet WPF (`optiCombat/`) reste en coexistence legacy.
 
 [![CI](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml/badge.svg)](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml)
 
@@ -16,7 +18,7 @@ Antivirus Windows open source — interface **WPF .NET 8**, moteurs **ClamAV** +
 |---------|---------|
 | **Analyse** | Rapide, complète, fichier, dossier, clés USB/SD |
 | **Protection** | RTP user-mode, quarantaine AES-GCM, exclusions DPAPI, posture /100 |
-| **Interface** | Mono-fenêtre FR/EN, thèmes Combat Aqua (clair / sombre / contraste), cadran de scan circulaire |
+| **Interface** | Mono-fenêtre FR/EN (WinUI 3), thèmes clair / sombre, cadran de scan circulaire |
 | **Publication** | Installateur Inno `optiCombat_Setup_v1.0.0.exe` |
 
 La couche plateforme (service Windows, AMSI, minifiltre) est **incluse mais inactive** par défaut — protection sans pilote signé.
@@ -36,9 +38,11 @@ Prérequis : Windows 10/11 **x64**, droits administrateur pour l’installateur.
 ```powershell
 git clone https://github.com/1donatien0/optiCOMBAT.git
 cd optiCOMBAT
+git checkout dev
 .\scripts\fetch-runtime-deps.ps1
 dotnet build optiCombat.sln -c Release
 dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release
+dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
 ```
 
 **Moteur Rust** :
@@ -60,6 +64,7 @@ dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release
 
 | Document | Sujet |
 |----------|--------|
+| [docs/MIGRATION_WINUI3.md](docs/MIGRATION_WINUI3.md) | Migration WinUI 3, architecture, publish |
 | [docs/GUIDE_COMPLET.md](docs/GUIDE_COMPLET.md) | Architecture, interface, publication |
 | [docs/README.md](docs/README.md) | Index documentation |
 | [SECURITY.md](SECURITY.md) | Vulnérabilités, modèle de menace |

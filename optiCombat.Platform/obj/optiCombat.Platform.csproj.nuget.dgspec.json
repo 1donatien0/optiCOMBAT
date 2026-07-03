@@ -10,7 +10,7 @@
         "projectUniqueName": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
         "projectName": "optiCombat.Platform",
         "projectPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\optiCombat.Platform.csproj",
-        "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\cdb8e0823edb3f7dfe50138f32af9f1e\\nuget",
+        "packagesPath": "C:\\Users\\BYAKOMBE\\AppData\\Local\\Temp\\cursor-sandbox-cache\\69f88a0eaed2f796b8b4da410a21287d\\nuget",
         "outputPath": "D:\\Projets\\optiCombat\\optiCombat.Platform\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
@@ -78,11 +78,6 @@
             }
           },
           "runtimeIdentifierGraphPath": "C:\\Program Files\\dotnet\\sdk\\10.0.301/PortableRuntimeIdentifierGraph.json"
-        }
-      },
-      "runtimes": {
-        "win-x64": {
-          "#import": []
         }
       }
     }

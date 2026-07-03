@@ -102,25 +102,6 @@
                             </StackPanel>
                         </StackPanel>
 
-                        <!-- Contraste renforcé -->
-                        <StackPanel Orientation="Horizontal" Margin="0,0,0,12">
-                            <CheckBox x:Name="chkHighContrast"
-                                      VerticalAlignment="Top"
-                                      Margin="0,2,16,0"
-                                      Checked="CheckOption_Changed"
-                                      Unchecked="CheckOption_Changed"
-                                      Tag="HighContrast"/>
-                            <StackPanel>
-                                <TextBlock Text="{loc:Loc Key=Opt_HighContrast}"
-                                           FontSize="{DynamicResource FontSize.Title}" FontWeight="SemiBold"
-                                           Foreground="{DynamicResource TextDark}"/>
-                                <TextBlock Text="{loc:Loc Key=Opt_HighContrastSub}"
-                                           FontSize="{DynamicResource FontSize.Small}" Foreground="{DynamicResource TextMuted}"
-                                           Margin="0,3,0,0" TextWrapping="Wrap"/>
-                            </StackPanel>
-                        </StackPanel>
-
-
                         <!-- Langue de l'interface -->
                         <StackPanel Margin="0,0,0,20">
                             <TextBlock Text="{loc:Loc Key=Opt_Language}"

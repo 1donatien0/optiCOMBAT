@@ -1,7 +1,7 @@
 # Pont FFI — optiCOMBAT ↔ optiCombat.Service (Phase 3)
 
 Ce dossier montre comment le service C# existant (`optiCombat.Service`) appelle le
-**cœur moteur Rust** sans réécrire l'UI WPF, via une frontière **C ABI** stable.
+**cœur moteur Rust** sans réécrire l'UI (WinUI 3 / WPF legacy), via une frontière **C ABI** stable.
 
 ## Composants
 

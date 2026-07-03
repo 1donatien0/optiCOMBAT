@@ -30,14 +30,16 @@
 
 ## 1. Architecture technique
 
-### Choix du langage : C# WPF .NET 8
+### Choix du langage : C# .NET 8 (WinUI 3 + WPF legacy)
 
-| Critère | WPF | MAUI | C++ natif |
+| Critère | WinUI 3 | WPF (legacy) | MAUI |
 |---|---|---|---|
-| Compatibilité Windows | Oui — natif | Partiel — multi-plateforme (overhead) | Oui — natif |
-| Intégration ClamAV | Oui — Process.Start / TCP clamd | Oui — Process.Start | Oui — libclamav directe |
-| MVVM + Binding UI | Oui — excellent | Partiel — différent | Non — manuel |
-| **Verdict** | **Retenu** | Non nécessaire | Non nécessaire |
+| Compatibilité Windows | Oui — natif | Oui — natif | Partiel — multi-plateforme |
+| Intégration ClamAV | Oui — Process.Start / TCP clamd | Oui | Oui |
+| MVVM + Binding UI | Oui | Oui — excellent | Partiel |
+| **Verdict** | **Shell principal (`dev`)** | Coexistence | Non retenu |
+
+Le métier partagé vit dans **`optiCombat.Application`** ; le shell livré est **`optiCombat.WinUI`** (`optiCombat.exe`). Voir [MIGRATION_WINUI3.md](MIGRATION_WINUI3.md).
 
 ### Architecture plateforme (protection système)
 
@@ -46,7 +48,7 @@
 optiCOMBAT rapproche un antivirus « classique » via une couche plateforme Windows (activable ultérieurement) :
 
 ```
-optiCombat.exe (UI WPF)
+optiCombat.exe (UI WinUI 3 — shell principal)
     ↔ IPC (optiCombat.Platform — pipe optiCombat_Protection)
 optiCombat.Service.exe  →  optiCombat.exe --service-host
     ├── RTP + ProcessStartMonitor + scan USB
@@ -93,6 +95,8 @@ optiCombat.Service.exe  →  optiCombat.exe --service-host
 │   ├── validate-release-readiness.ps1 ← Tests Release (+ verify publish optionnel)
 │   └── runtime-versions.json          ← Versions URL ClamAV / YARA
 ├── optiCombat.sln                       ← Solution Visual Studio
+├── optiCombat.Application/              ← Métier partagé (models, services, coordinators, i18n)
+├── optiCombat.WinUI/                    ← Shell WinUI 3 (binaire optiCombat.exe)
 ├── optiCombat.Platform/                 ← IPC protection système
 ├── optiCombat.Service/                  ← Service Windows (supervise --service-host)
 ├── optiCombat.Tests/                    ← Tests unitaires (xUnit)
@@ -100,9 +104,9 @@ optiCombat.Service.exe  →  optiCombat.exe --service-host
 │   ├── optiCombat.AmsiProvider/         ← DLL AMSI (C++, build MSVC)
 │   └── optiCombat.Minifilter/           ← Driver noyau stub (WDK)
 ├── installer/
-│   ├── setup.iss                      ← Script Inno Setup (FR + EN)
+│   ├── setup.iss                      ← Script Inno Setup (FR + EN) — publish WinUI
 │   └── build-release-setup.ps1        ← clean + publish + ISCC
-└── optiCombat/                          ← Projet C# WPF
+└── optiCombat/                          ← Projet WPF legacy (coexistence)
     ├── Models/
     │   ├── ThreatInfo.cs              ← Menace détectée
     │   ├── ScanProgress.cs            ← Progression temps réel (IProgress<T>)
@@ -181,7 +185,7 @@ optiCombat.Service.exe  →  optiCombat.exe --service-host
     ├── Themes/
     │   ├── Donaby.Dark.xaml           ← Thème sombre
     │   ├── Donaby.Light.xaml          ← Thème clair
-    │   └── Donaby.HighContrast.xaml   ← Contraste renforcé (Options)
+    │   └── Donaby.HighContrast.xaml   ← Thème contraste (WPF legacy — option UI retirée)
     │
     ├── App.xaml                       ← Fusionne Donaby.Light + ThemeManager au démarrage
     ├── MainWindow.xaml                ← Fenêtre unique — 5 panneaux sidebar
@@ -216,30 +220,30 @@ Fichiers de thème :
 |---|---|
 | `Themes/Donaby.Dark.xaml` | Palette sombre |
 | `Themes/Donaby.Light.xaml` | Palette claire |
-| `Themes/Donaby.HighContrast.xaml` | Bordures et textes renforcés (Options) |
-| `Services/ThemeManager.cs` | Clair / sombre / contraste ; sync thème Windows |
+| `Themes/Donaby.HighContrast.xaml` | Variante contraste (WPF legacy, non exposée en Options) |
+| `Services/ThemeManager.cs` | Clair / sombre ; sync thème Windows (WPF) |
 
 ### 2.2 ThemeManager
 
 `ThemeManager` est un service `static` initialisé **avant** `InitializeComponent()` dans le constructeur de **`MainWindow`** (thème correct dès le premier rendu XAML) :
 
 ```csharp
-// MainWindow() — avant InitializeComponent()
+// MainWindow WPF legacy — avant InitializeComponent()
 ThemeManager.Initialize(); // SyncWindowsTheme par défaut, sinon DarkTheme
 
-// Options — thème opposé à Windows (décocher = resuivre Windows)
+// Options WPF — thème opposé à Windows (décocher = resuivre Windows)
 ThemeManager.SetAlternateThemeEnabled(true/false);
 
-// Contraste renforcé (Options)
-ThemeManager.SetHighContrast(true);
+// WinUI 3 (Options) — thème clair / sombre
+WinUiApp.Current.RequestedTheme = ApplicationTheme.Dark;
 
-// S'abonner aux changements
+// S'abonner aux changements (WPF)
 ThemeManager.ThemeChanged += (_, isDark) => { /* ... */ };
 ```
 
 Styles boutons (`Styles/Controls.xaml`) : `GradientPrimaryButton`, `DangerButton`, `WarningButton`, `SuccessButton`, `HubActionCardButton`, etc. — couleurs sémantiques via `TemplateBinding.Background`.
 
-La préférence est persistée dans `%AppData%\optiCombat\preferences.dat` (DPAPI + HMAC). Par défaut **optiCOMBAT suit le thème applications Windows** (`SyncWindowsTheme`). Dans **Options**, une seule case dynamique propose le thème **opposé** à Windows (libellé « Thème clair » si Windows est sombre, « Thème sombre » si Windows est clair). Propriétés : `DarkTheme`, `SyncWindowsTheme`, `HighContrastEnabled`.
+La préférence est persistée dans `%AppData%\optiCombat\preferences.dat` (DPAPI + HMAC). **WinUI 3** : bascule **Thème sombre** dans Options. **WPF legacy** : suit le thème applications Windows (`SyncWindowsTheme`) avec case dynamique opposée. Propriétés : `DarkTheme`, `SyncWindowsTheme`. L’option **Contraste renforcé** a été retirée des Paramètres (branche `dev`).
 
 ### 2.3 Tokens de couleur disponibles
 
@@ -803,7 +807,7 @@ Première release **optiCOMBAT** — antivirus Windows (ClamAV + YARA).
 - **Analyse** — rapide, complète, fichier, dossier, USB/SD ; ClamAV (clamd / clamscan) + YARA ; moteur Rust `opticombat.dll` (repli ClamAV si absent)
 - **Protection** — RTP user-mode, quarantaine AES-GCM, exclusions DPAPI + implicites RTP, planificateur, posture /100
 - **Historique** — timeline, exports HTML/PDF, sessions chiffrées
-- **Interface** — mono-fenêtre Donaby Combat Aqua (FR/EN), cadran de scan circulaire, thèmes clair / sombre / contraste
+- **Interface** — mono-fenêtre Donaby Combat Aqua (FR/EN), cadran de scan circulaire, thèmes clair / sombre (WinUI 3 sur `dev`)
 - **Publication** — installateur `optiCombat_Setup_v1.0.0.exe`, `scripts/prepare-release.ps1`
 - **Qualité** — **300** tests Release, NetAnalyzers, SBOM (`scripts/generate-sbom.ps1`)
 

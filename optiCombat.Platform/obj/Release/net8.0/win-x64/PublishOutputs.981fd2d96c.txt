@@ -1,3 +1,0 @@
-D:\Projets\optiSCAN-stable\optiSCAN.Platform\bin\Release\net8.0\publish\win-x64\optiSCAN.Platform.dll
-D:\Projets\optiSCAN-stable\optiSCAN.Platform\bin\Release\net8.0\publish\win-x64\optiSCAN.Platform.pdb
-D:\Projets\optiSCAN-stable\optiSCAN.Platform\bin\Release\net8.0\publish\win-x64\optiSCAN.Platform.deps.json

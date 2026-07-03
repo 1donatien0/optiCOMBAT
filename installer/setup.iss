@@ -27,20 +27,22 @@
 ; Le .csproj supprime win-x64 / win-x86 / publish avant chaque publish (cible CleanStalePublishOutput).
 ; CI : /DAppPublishSource=..\publish\win-x64\*
 #ifndef AppPublishSource
-#if FileExists(AddBackslash(SourcePath) + "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\optiCombat.exe")
+#if FileExists(AddBackslash(SourcePath) + "..\optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\optiCombat.exe")
+  #define AppPublishSource "..\optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\*"
+#elif FileExists(AddBackslash(SourcePath) + "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\optiCombat.exe")
   #define AppPublishSource "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\*"
 #elif FileExists(AddBackslash(SourcePath) + "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\optiCombat.exe")
   #define AppPublishSource "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\*"
 #else
-  #expr Error("optiCombat.exe introuvable. Publiez d'abord vers bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\ (VS : FolderProfile-SelfContained), ou : dotnet publish -c Release -p:PublishProfile=FolderProfile-SelfContained")
+  #expr Error("optiCombat.exe introuvable. Publiez d'abord WinUI : dotnet publish optiCombat.WinUI -c Release -r win-x64 --self-contained true")
 #endif
 #endif
 
 ; Publication self-contained : le runtime .NET est embarqué — pas de blocage installeur.
 #ifndef SelfContainedPublish
-#if FileExists(AddBackslash(SourcePath) + "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\System.Private.CoreLib.dll")
+#if FileExists(AddBackslash(SourcePath) + "..\optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\System.Private.CoreLib.dll")
   #define SelfContainedPublish
-#elif FileExists(AddBackslash(SourcePath) + "..\publish\win-x64\System.Private.CoreLib.dll")
+#elif FileExists(AddBackslash(SourcePath) + "..\optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64\System.Private.CoreLib.dll")
   #define SelfContainedPublish
 #endif
 #endif

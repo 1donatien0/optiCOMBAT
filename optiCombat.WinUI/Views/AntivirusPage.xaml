@@ -1,0 +1,160 @@
+<UserControl
+    x:Class="optiCombat.WinUI.Views.AntivirusPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <Grid Padding="24,20">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="20,16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+            <Grid ColumnSpacing="16">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*" />
+                    <ColumnDefinition Width="Auto" />
+                </Grid.ColumnDefinitions>
+                <StackPanel Spacing="4">
+                    <TextBlock FontSize="24" FontWeight="SemiBold" Text="Antivirus" />
+                    <TextBlock x:Name="LastScanText" Foreground="{StaticResource TextMutedBrush}" Text="Aucune analyse" />
+                </StackPanel>
+                <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
+                    <Ellipse x:Name="BadgeDot" Width="8" Height="8" Fill="{StaticResource AccentBrush}" />
+                    <TextBlock x:Name="BadgeText" VerticalAlignment="Center" Text="Protection active" />
+                </StackPanel>
+            </Grid>
+        </Border>
+
+        <TabView Grid.Row="1" Margin="0,14,0,0" IsAddTabButtonVisible="False">
+            <TabViewItem Header="Analyse" IsSelected="True">
+                <Grid RowSpacing="12">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+
+                    <Grid x:Name="ScanHubPanel" ColumnSpacing="10">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Button Click="QuickScan_Click" MinHeight="88">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <FontIcon Glyph="&#xE945;" Foreground="{StaticResource AccentBrush}" />
+                                <TextBlock FontWeight="SemiBold" Text="Analyse rapide" />
+                            </StackPanel>
+                        </Button>
+                        <Button Grid.Column="1" Click="FullScan_Click" MinHeight="88">
+                            <StackPanel Spacing="8" HorizontalAlignment="Center">
+                                <FontIcon Glyph="&#xE721;" Foreground="{StaticResource AccentBrush}" />
+                                <TextBlock FontWeight="SemiBold" Text="Analyse complète" />
+                            </StackPanel>
+                        </Button>
+                        <StackPanel Grid.Column="2" Spacing="8">
+                            <Button Click="BrowseFolder_Click" Content="Dossier" />
+                            <Button Click="BrowseFile_Click" Content="Fichier" />
+                        </StackPanel>
+                    </Grid>
+
+                    <Border x:Name="ScanProgressPanel" Grid.Row="1" Padding="16" Background="#F8FAFC"
+                            BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Visibility="Collapsed">
+                        <StackPanel Spacing="10">
+                            <ProgressBar x:Name="ScanProgressBar" IsIndeterminate="True" />
+                            <TextBlock x:Name="ScanStatusText" TextWrapping="WrapWholeWords" />
+                            <TextBlock x:Name="ScanCurrentItemText" Foreground="{StaticResource TextMutedBrush}"
+                                       FontSize="12" TextWrapping="WrapWholeWords" />
+                            <Button Click="StopScan_Click" Content="Arrêter l'analyse" HorizontalAlignment="Left" />
+                        </StackPanel>
+                    </Border>
+
+                    <Grid Grid.Row="2" ColumnSpacing="12">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="220" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="8">
+                            <TextBlock FontWeight="SemiBold" Text="Statistiques" />
+                            <TextBlock x:Name="FilesScannedText" Text="Fichiers : 0" />
+                            <TextBlock x:Name="ThreatsFoundText" Text="Menaces : 0" />
+                            <TextBlock x:Name="QuarantineCountText" Text="Quarantaine : 0" />
+                            <Button Click="QuarantineAll_Click" Content="Tout mettre en quarantaine" />
+                        </StackPanel>
+                        <Border Grid.Column="1" Padding="12" Background="White" BorderBrush="#E2E8F0"
+                                BorderThickness="1" CornerRadius="8">
+                            <StackPanel Spacing="8">
+                                <TextBlock FontWeight="SemiBold" Text="Menaces détectées" />
+                                <ListView x:Name="ThreatsList" MinHeight="220">
+                                    <ListView.ItemTemplate>
+                                        <DataTemplate>
+                                            <StackPanel Spacing="2">
+                                                <TextBlock FontWeight="SemiBold" Text="{Binding VirusName}" />
+                                                <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                                           Text="{Binding FilePath}" TextWrapping="WrapWholeWords" />
+                                            </StackPanel>
+                                        </DataTemplate>
+                                    </ListView.ItemTemplate>
+                                </ListView>
+                            </StackPanel>
+                        </Border>
+                    </Grid>
+                </Grid>
+            </TabViewItem>
+
+            <TabViewItem Header="Signatures">
+                <StackPanel Spacing="12">
+                    <Grid ColumnSpacing="16">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <StackPanel Spacing="6">
+                            <TextBlock FontWeight="SemiBold" Text="YARA" />
+                            <TextBlock x:Name="YaraVersionText" FontSize="20" Text="—" />
+                            <TextBlock x:Name="YaraUpdateText" Foreground="{StaticResource TextMutedBrush}" Text="—" />
+                        </StackPanel>
+                        <StackPanel Grid.Column="1" Spacing="6">
+                            <TextBlock FontWeight="SemiBold" Text="ClamAV" />
+                            <TextBlock x:Name="ClamVersionText" FontSize="20" Text="—" />
+                            <TextBlock x:Name="ClamUpdateText" Foreground="{StaticResource TextMutedBrush}" Text="—" />
+                        </StackPanel>
+                    </Grid>
+                    <Button Click="UpdateSignatures_Click" Content="Mettre à jour les signatures" HorizontalAlignment="Left" />
+                    <ScrollViewer MaxHeight="260">
+                        <TextBlock x:Name="SignatureLogText" FontFamily="Consolas" FontSize="12" TextWrapping="WrapWholeWords" />
+                    </ScrollViewer>
+                </StackPanel>
+            </TabViewItem>
+
+            <TabViewItem Header="Quarantaine">
+                <StackPanel Spacing="10">
+                    <TextBlock x:Name="QuarantineHeaderText" Text="Éléments en quarantaine" />
+                    <ListView x:Name="QuarantineList" MinHeight="280">
+                        <ListView.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnSpacing="12">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="*" />
+                                        <ColumnDefinition Width="Auto" />
+                                        <ColumnDefinition Width="Auto" />
+                                    </Grid.ColumnDefinitions>
+                                    <StackPanel Spacing="2">
+                                        <TextBlock FontWeight="SemiBold" Text="{Binding FileName}" />
+                                        <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="12" Text="{Binding VirusName}" />
+                                    </StackPanel>
+                                    <Button Grid.Column="1" Click="RestoreQuarantine_Click" Tag="{Binding Id}" Content="Restaurer" />
+                                    <Button Grid.Column="2" Click="DeleteQuarantine_Click" Tag="{Binding Id}" Content="Supprimer" />
+                                </Grid>
+                            </DataTemplate>
+                        </ListView.ItemTemplate>
+                    </ListView>
+                </StackPanel>
+            </TabViewItem>
+        </TabView>
+
+        <ProgressRing x:Name="InitRing" Grid.RowSpan="2" Width="48" Height="48"
+                      HorizontalAlignment="Center" VerticalAlignment="Center" IsActive="True" />
+    </Grid>
+</UserControl>

@@ -48,9 +48,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $repo = Split-Path -Parent $PSScriptRoot
-$proj = Join-Path $repo 'optiCombat\optiCombat.csproj'
-$tfm  = 'net8.0-windows10.0.17763.0'
-$publishDir = Join-Path $repo "optiCombat\bin\$Configuration\$tfm\publish\$Runtime"
+$proj = Join-Path $repo 'optiCombat.WinUI\optiCombat.WinUI.csproj'
+$tfm  = 'net8.0-windows10.0.19041.0'
+$publishDir = Join-Path $repo "optiCombat.WinUI\bin\$Configuration\$tfm\publish\$Runtime"
 
 function Write-Step($m) { Write-Host "`n=== $m ===" -ForegroundColor Cyan }
 
