@@ -6,7 +6,7 @@
     Re-télécharge même si les exécutables sont déjà présents.
 
 .PARAMETER RunFreshclam
-    Lance freshclam vers optiCombat/clamav/database (long, ~200+ Mo).
+    Lance freshclam vers runtime/clamav/database (long, ~200+ Mo).
 
 .PARAMETER FreshclamTimeoutMinutes
     Délai max pour freshclam (défaut 45).
@@ -28,9 +28,9 @@ $versionsPath = Join-Path $PSScriptRoot 'runtime-versions.json'
 if (-not (Test-Path $versionsPath)) { throw "Introuvable : $versionsPath" }
 $versions = Get-Content $versionsPath -Raw | ConvertFrom-Json
 
-$clamX64 = Join-Path $root 'optiCombat\clamav\x64'
-$clamDb = Join-Path $root 'optiCombat\clamav\database'
-$yaraDir = Join-Path $root 'optiCombat\yara'
+$clamX64 = Join-Path $root 'runtime\clamav\x64'
+$clamDb = Join-Path $root 'runtime\clamav\database'
+$yaraDir = Join-Path $root 'runtime\yara'
 $cacheDir = Join-Path $root 'artifacts\deps-cache'
 New-Item -ItemType Directory -Force -Path $clamX64, $clamDb, $yaraDir, $cacheDir | Out-Null
 
@@ -130,10 +130,10 @@ if ($Force -or (Test-ClamReady) -gt 0) {
         Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
     }
 } else {
-    Write-Host "[ ClamAV ] deja present dans optiCombat\clamav\x64" -ForegroundColor DarkGray
+    Write-Host "[ ClamAV ] deja present dans runtime\clamav\x64" -ForegroundColor DarkGray
 }
 
-$certsSource = Join-Path $root 'optiCombat\clamav\certs'
+$certsSource = Join-Path $root 'runtime\clamav\certs'
 if ((Test-Path (Join-Path $clamX64 'clamscan.exe')) -and (Test-Path (Join-Path $certsSource 'clamav.crt'))) {
     Install-ClamCertsLayout -SourceCertsDir $certsSource | Out-Null
 }
@@ -158,7 +158,7 @@ if ($Force -or -not (Test-YaraReady)) {
         Remove-Item -LiteralPath $temp -Recurse -Force -ErrorAction SilentlyContinue
     }
 } else {
-    Write-Host "[ YARA ] deja present dans optiCombat\yara" -ForegroundColor DarkGray
+    Write-Host "[ YARA ] deja present dans runtime\yara" -ForegroundColor DarkGray
 }
 
 # --- Signatures ---
@@ -166,7 +166,7 @@ if ($RunFreshclam) {
     $freshclam = Join-Path $clamX64 'freshclam.exe'
     if (-not (Test-Path $freshclam)) { throw "freshclam.exe introuvable : $freshclam" }
     $confPath = Join-Path $clamX64 'freshclam.conf'
-    $certsSource = Join-Path $root 'optiCombat\clamav\certs'
+    $certsSource = Join-Path $root 'runtime\clamav\certs'
     $certsResolved = Install-ClamCertsLayout -SourceCertsDir $certsSource
     Clear-PartialClamDatabases -DatabaseDir $clamDb
     if ($env:GITHUB_ACTIONS -eq 'true') {
@@ -205,9 +205,9 @@ if ($RunFreshclam) {
     Write-Host "  Signatures OK dans $clamDb" -ForegroundColor Green
 }
 
-$rules = Get-ChildItem (Join-Path $root 'optiCombat\rules') -Filter '*.yar' -ErrorAction SilentlyContinue
+$rules = Get-ChildItem (Join-Path $root 'runtime\rules') -Filter '*.yar' -ErrorAction SilentlyContinue
 if (-not $rules -or $rules.Count -eq 0) {
-    Write-Warning "Aucune regle .yar dans optiCombat\rules"
+    Write-Warning "Aucune regle .yar dans runtime\rules"
 }
 
 Write-Host "`nVerification projet (avant publish)..." -ForegroundColor Cyan

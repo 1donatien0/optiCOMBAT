@@ -8,7 +8,7 @@
     <RootNamespace>optiCombat.Service</RootNamespace>
     <AssemblyName>optiCombat.Service</AssemblyName>
     <Product>optiCombat v1.0 Protection Service</Product>
-    <ApplicationIcon>..\optiCombat\optiCombat.ico</ApplicationIcon>
+    <ApplicationIcon>..\assets\optiCombat.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>

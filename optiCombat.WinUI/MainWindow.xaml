@@ -4,13 +4,13 @@
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
     Title="optiCombat">
 
-    <Grid x:Name="RootGrid" Background="{StaticResource AppBackgroundBrush}">
+    <Grid x:Name="RootGrid" Background="{ThemeResource AppBackgroundBrush}">
         <Grid.ColumnDefinitions>
             <ColumnDefinition Width="96" />
             <ColumnDefinition Width="*" />
         </Grid.ColumnDefinitions>
 
-        <Grid Grid.Column="0" Background="{StaticResource SidebarBackgroundBrush}">
+        <Grid Grid.Column="0" Background="{ThemeResource SidebarBackgroundBrush}" RequestedTheme="Dark">
             <Grid.RowDefinitions>
                 <RowDefinition Height="Auto" />
                 <RowDefinition Height="*" />
@@ -18,9 +18,9 @@
             </Grid.RowDefinitions>
 
             <Image
-                Width="56"
-                Height="56"
-                Margin="0,22,0,18"
+                Width="48"
+                Height="48"
+                Margin="0,16,0,12"
                 HorizontalAlignment="Center"
                 Source="ms-appx:///Assets/optiCombat_hero.png" />
 
@@ -37,20 +37,39 @@
                 <NavigationView.MenuItems>
                     <NavigationViewItem Content="Accueil" Icon="Home" Tag="overview" IsSelected="True" />
                     <NavigationViewItem Content="Nettoyer" Icon="Repair" Tag="clean" />
-                    <NavigationViewItem Content="Antivirus" Icon="Shield" Tag="antivirus" />
-                    <NavigationViewItem Content="Historique" Icon="Clock" Tag="history" />
+                    <NavigationViewItem Content="Antivirus" Tag="antivirus">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xE83D;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
+                    <NavigationViewItem Content="Historique" Tag="history">
+                        <NavigationViewItem.Icon>
+                            <FontIcon Glyph="&#xE81C;" />
+                        </NavigationViewItem.Icon>
+                    </NavigationViewItem>
                     <NavigationViewItem Content="Options" Icon="Setting" Tag="options" />
                 </NavigationView.MenuItems>
             </NavigationView>
 
-            <TextBlock
-                x:Name="VersionText"
-                Grid.Row="2"
-                Margin="8,0,8,18"
-                HorizontalAlignment="Center"
-                Foreground="#94A3B8"
-                FontSize="11"
-                TextAlignment="Center" />
+            <StackPanel Grid.Row="2" Spacing="6">
+                <Button
+                    x:Name="ThemeToggleButton"
+                    HorizontalAlignment="Center"
+                    Padding="10,8"
+                    Background="Transparent"
+                    BorderThickness="0"
+                    Click="ThemeToggle_Click"
+                    ToolTipService.ToolTip="Basculer entre thème clair et sombre">
+                    <FontIcon x:Name="ThemeToggleIcon" FontSize="16" Glyph="&#xE708;" />
+                </Button>
+                <TextBlock
+                    x:Name="VersionText"
+                    Margin="8,0,8,12"
+                    HorizontalAlignment="Center"
+                    Foreground="#94A3B8"
+                    FontSize="11"
+                    TextAlignment="Center" />
+            </StackPanel>
         </Grid>
 
         <Grid Grid.Column="1">
@@ -59,17 +78,21 @@
                 <RowDefinition Height="Auto" />
             </Grid.RowDefinitions>
 
-            <ContentControl x:Name="PageHost" Grid.Row="0" />
+            <ContentControl
+                x:Name="PageHost"
+                Grid.Row="0"
+                HorizontalContentAlignment="Stretch"
+                VerticalContentAlignment="Stretch" />
 
             <Border
                 Grid.Row="1"
                 Padding="18,9"
-                Background="White"
-                BorderBrush="#E2E8F0"
+                Background="{ThemeResource CardBackgroundBrush}"
+                BorderBrush="{ThemeResource CardBorderBrush}"
                 BorderThickness="0,1,0,0">
                 <TextBlock
                     x:Name="StatusText"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{ThemeResource TextMutedBrush}"
                     Text="WinUI 3 prêt - migration progressive" />
             </Border>
         </Grid>

@@ -8,14 +8,14 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$tfm = 'net8.0-windows10.0.17763.0'
+$tfm = 'net8.0-windows10.0.19041.0'
 
 $candidates = @(
-    @{ Label = 'Release publish win-x64 (attendu)'; Path = "optiCombat\bin\Release\$tfm\publish\win-x64\optiCombat.exe" },
-    @{ Label = 'Release publish plat'; Path = "optiCombat\bin\Release\$tfm\publish\optiCombat.exe" },
-    @{ Label = 'Release win-x64 intermediaire (build, pas publish)'; Path = "optiCombat\bin\Release\$tfm\win-x64\optiCombat.exe" },
-    @{ Label = 'Debug publish win-x64 (mauvaise config pour Inno)'; Path = "optiCombat\bin\Debug\$tfm\publish\win-x64\optiCombat.exe" },
-    @{ Label = 'Ancien VS net8.0 publish win-x64'; Path = 'optiCombat\bin\Release\net8.0\publish\win-x64\optiCombat.exe' },
+    @{ Label = 'Release publish win-x64 (attendu)'; Path = "optiCombat.WinUI\bin\Release\$tfm\publish\win-x64\optiCombat.exe" },
+    @{ Label = 'Release publish plat'; Path = "optiCombat.WinUI\bin\Release\$tfm\publish\optiCombat.exe" },
+    @{ Label = 'Release win-x64 intermediaire (build, pas publish)'; Path = "optiCombat.WinUI\bin\Release\$tfm\win-x64\optiCombat.exe" },
+    @{ Label = 'Debug publish win-x64 (mauvaise config pour Inno)'; Path = "optiCombat.WinUI\bin\Debug\$tfm\publish\win-x64\optiCombat.exe" },
+    @{ Label = 'Ancien VS net8.0 publish win-x64'; Path = 'optiCombat.WinUI\bin\Release\net8.0\publish\win-x64\optiCombat.exe' },
     @{ Label = 'CI publish racine'; Path = 'publish\win-x64\optiCombat.exe' }
 )
 
@@ -40,7 +40,7 @@ if ($found.Count -eq 0) {
     Write-Host @"
 
 Publiez en Release avec le bon profil :
-  dotnet publish .\optiCombat\optiCombat.csproj -c Release -p:PublishProfile=FolderProfile-SelfContained
+  dotnet publish .\optiCombat.WinUI\optiCombat.WinUI.csproj -c Release -p:PublishProfile=FolderProfile-SelfContained
 
 VS : clic droit optiCombat > Publier > FolderProfile-SelfContained (Configuration = Release).
 

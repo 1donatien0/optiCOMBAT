@@ -17,9 +17,9 @@ param(
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 $tfm = 'net8.0-windows10.0.17763.0'
-$binDir = Join-Path $root "optiCombat\bin\$Configuration\$tfm"
+$binDir = Join-Path $root "optiCombat.WinUI\bin\$Configuration\$tfm"
 $objDir = Join-Path $root "optiCombat\obj\$Configuration\$tfm"
-$legacyVsBinDir = Join-Path $root "optiCombat\bin\$Configuration\net8.0"
+$legacyVsBinDir = Join-Path $root "optiCombat.WinUI\bin\$Configuration\net8.0"
 $legacyVsObjDir = Join-Path $root "optiCombat\obj\$Configuration\net8.0"
 $ridOutputDir = Join-Path $binDir 'win-x64'
 $publishRoot = Join-Path $binDir 'publish'
@@ -115,7 +115,7 @@ if ($Configuration -eq 'Release') {
 
 # Securite : exe residuels hors bin (publish partiel, ancien RID, etc.)
 $extraDirs = @(
-    (Join-Path $root "optiCombat\bin\$Configuration"),
+    (Join-Path $root "optiCombat.WinUI\bin\$Configuration"),
     (Join-Path $root 'optiCombat\bin')
 )
 foreach ($dir in $extraDirs) {
@@ -144,7 +144,7 @@ Write-Host ""
 Write-Host "Nettoyage termine ($removed operation(s))." -ForegroundColor Green
 Write-Host "Ordre obligatoire avant Inno (sans publish frais = installateur obsolete) :" -ForegroundColor Yellow
 Write-Host "  1. .\scripts\clean-before-publish.ps1 -IncludeObj [-IncludeInstallerOutput]"
-Write-Host "  2. dotnet publish .\optiCombat\optiCombat.csproj -c Release -p:PublishProfile=FolderProfile-SelfContained"
+Write-Host "  2. dotnet publish .\optiCombat.WinUI\optiCombat.WinUI.csproj -c Release -p:PublishProfile=FolderProfile-SelfContained"
 Write-Host "  3. .\scripts\verify-runtime-deps.ps1"
 Write-Host "  4. .\installer\build-release-setup.ps1 -SkipPublish   # ou ISCC avec AppPublishSource win-x64"
 Write-Host ""

@@ -13,9 +13,9 @@ param(
 
 $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
-$csproj = Join-Path $root 'optiCombat\optiCombat.csproj'
+$csproj = Join-Path $root 'optiCombat.WinUI\optiCombat.WinUI.csproj'
 $iss = Join-Path $PSScriptRoot 'setup.iss'
-$defaultPublishDir = Join-Path $root 'optiCombat\bin\Release\net8.0-windows10.0.17763.0\publish\win-x64'
+$defaultPublishDir = Join-Path $root 'optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64'
 $publishCandidates = @(
     $defaultPublishDir,
     (Join-Path $root 'publish\win-x64')
@@ -72,7 +72,7 @@ if (-not (Test-Path -LiteralPath $publishExe)) {
     throw "Publication introuvable : $publishExe (faites dotnet publish avant Inno)."
 }
 
-$srcClamScan = Join-Path $root 'optiCombat\clamav\x64\clamscan.exe'
+$srcClamScan = Join-Path $root 'runtime\clamav\x64\clamscan.exe'
 if (-not (Test-Path -LiteralPath $srcClamScan)) {
     $fetchScript = Join-Path $root 'scripts\fetch-runtime-deps.ps1'
     if (Test-Path -LiteralPath $fetchScript) {

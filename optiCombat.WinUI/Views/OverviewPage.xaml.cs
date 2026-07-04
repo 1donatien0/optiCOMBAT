@@ -193,9 +193,6 @@ public sealed partial class OverviewPage : UserControl, IOverviewPanel
         }
     }
 
-    private void Scan_Click(object sender, RoutedEventArgs e) =>
-        ActionRequested?.Invoke(this, "antivirus");
-
     private void Action_Click(object sender, RoutedEventArgs e)
     {
         if (sender is FrameworkElement { Tag: string tag })

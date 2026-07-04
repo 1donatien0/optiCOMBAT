@@ -8,6 +8,6 @@
     <AssemblyName>AdminRestoreQuarantine</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
-    <ProjectReference Include="..\..\optiCombat\optiCombat.csproj" />
+    <ProjectReference Include="..\..\optiCombat.Application\optiCombat.Application.csproj" />
   </ItemGroup>
 </Project>

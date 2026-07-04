@@ -25,7 +25,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\optiCombat\optiCombat.csproj" />
+    <ProjectReference Include="..\optiCombat.Application\optiCombat.Application.csproj" />
     <ProjectReference Include="..\optiCombat.Platform\optiCombat.Platform.csproj" />
   </ItemGroup>
 

@@ -24,11 +24,11 @@ $ErrorActionPreference = 'Stop'
 $root = Split-Path -Parent $PSScriptRoot
 Set-Location $root
 
-$tfm = 'net8.0-windows10.0.17763.0'
+$tfm = 'net8.0-windows10.0.19041.0'
 $pubDir = if ($SelfContained) {
     Join-Path $root 'publish\win-x64'
 } else {
-    Join-Path $root "optiCombat\bin\Release\$tfm\publish\win-x64"
+    Join-Path $root "optiCombat.WinUI\bin\Release\$tfm\publish\win-x64"
 }
 
 function Invoke-Step([string] $label, [scriptblock] $action) {
@@ -83,7 +83,7 @@ if (-not $SkipTests) {
 }
 
 Invoke-Step 'dotnet publish' {
-    $csproj = Join-Path $root 'optiCombat\optiCombat.csproj'
+    $csproj = Join-Path $root 'optiCombat.WinUI\optiCombat.WinUI.csproj'
     $svc = Join-Path $root 'optiCombat.Service\optiCombat.Service.csproj'
     if ($SelfContained) {
         dotnet publish $csproj -c Release -r win-x64 --self-contained true `

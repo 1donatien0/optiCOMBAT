@@ -9,7 +9,6 @@ using optiCombat.Services;
 using optiCombat.Strings;
 using optiCombat.WinUI.Services;
 using optiCombat.WinUI.Views;
-using System.Diagnostics;
 using System.Reflection;
 using Windows.System;
 using WinRT.Interop;
@@ -83,6 +82,14 @@ public sealed partial class MainWindow : Window
         _appWindow = AppWindow.GetFromWindowId(windowId);
         _appWindow.Closing += AppWindow_Closing;
 
+        if (_appWindow.Presenter is OverlappedPresenter presenter)
+        {
+            presenter.PreferredMinimumWidth = 1024;
+            presenter.PreferredMinimumHeight = 600;
+        }
+
+        _appWindow.Resize(new Windows.Graphics.SizeInt32(1280, 720));
+
         _shellScan = new WinUiShellScanCoordinator(
             WinUiServiceHost.Instance.Antivirus,
             SelectNavigation,
@@ -109,8 +116,41 @@ public sealed partial class MainWindow : Window
 
         _tray.Initialize(hwnd, ShowWindow, ExitApplication);
 
+        ApplySavedTheme();
+
         _ = RunStartupAsync();
     }
+
+    private void ApplySavedTheme()
+    {
+        try
+        {
+            var prefs = WinUiServiceHost.Instance.Container.UserPreferencesAccessor.Current;
+            if (Content is FrameworkElement root)
+                root.RequestedTheme = prefs.SyncWindowsTheme
+                    ? ElementTheme.Default
+                    : (prefs.DarkTheme ? ElementTheme.Dark : ElementTheme.Light);
+            UpdateThemeToggleIcon(prefs.DarkTheme);
+        }
+        catch (Exception ex) { AppLogger.Warn("MainWindow", "ApplySavedTheme", ex); }
+    }
+
+    private void ThemeToggle_Click(object sender, RoutedEventArgs e)
+    {
+        try
+        {
+            var prefs = WinUiServiceHost.Instance.Container.UserPreferencesAccessor.Current;
+            var dark = !prefs.DarkTheme;
+            WinUiServiceHost.Instance.Options.ApplyTheme(dark);
+            UpdateThemeToggleIcon(dark);
+            StatusText.Text = dark ? "Thème sombre activé" : "Thème clair activé";
+        }
+        catch (Exception ex) { AppLogger.Warn("MainWindow", "ThemeToggle", ex); }
+    }
+
+    /// <summary>Soleil (E706) quand le sombre est actif — cliquer repasse en clair ; lune (E708) sinon.</summary>
+    private void UpdateThemeToggleIcon(bool dark) =>
+        ThemeToggleIcon.Glyph = dark ? "" : "";
 
     private async Task RunStartupAsync()
     {
@@ -194,6 +234,12 @@ public sealed partial class MainWindow : Window
 
     private void ShowSection(string tag)
     {
+        // SelectionChanged peut être levé pendant InitializeComponent (IsSelected=True en XAML)
+        // alors que PageHost / StatusText ne sont pas encore créés — le constructeur
+        // rappelle ShowSection("overview") explicitement après InitializeComponent.
+        if (PageHost is null || StatusText is null)
+            return;
+
         var label = tag switch
         {
             "overview" => "Accueil",
@@ -304,7 +350,12 @@ public sealed partial class MainWindow : Window
                 break;
             case "update":
                 SelectNavigation("antivirus");
+                _antivirusPage?.SelectSignaturesTab();
                 _ = RefreshAntivirusAsync(forceUpdate: true);
+                break;
+            case "antivirus":
+                SelectNavigation("antivirus");
+                _antivirusPage?.SelectScanTab();
                 break;
             default:
                 SelectNavigation(action);
@@ -347,6 +398,7 @@ public sealed partial class MainWindow : Window
         DispatcherQueue.TryEnqueue(() =>
         {
             SelectNavigation("antivirus");
+            _antivirusPage?.SelectQuarantineTab();
             WinUiServiceHost.Instance.Antivirus.LoadQuarantine();
         });
     }
@@ -378,37 +430,37 @@ public sealed partial class MainWindow : Window
     private void OnToastActivated(object? sender, ToastActivationEventArgs e) =>
         DispatcherQueue.TryEnqueue(() =>
         {
+            if (_navigation is null)
+                return;
+
             ToastActivationCoordinator.Handle(e, new ToastActivationCoordinator.Host
             {
                 Services = WinUiServiceHost.Instance.Container,
-                Navigation = _navigation!,
+                Navigation = _navigation,
                 ShowWindow = ShowWindow,
                 SetStatus = (msg, isError, isWarning) => StatusText.Text = msg,
                 RefreshQuarantineList = () => WinUiServiceHost.Instance.Antivirus.LoadQuarantine(),
                 RefreshAntivirusView = () => _ = RefreshAntivirusAsync(),
-                SelectAntivirusScanTab = () => { },
-                SelectAntivirusQuarantineTab = () => WinUiServiceHost.Instance.Antivirus.LoadQuarantine(),
-                SelectAntivirusSignaturesTab = () => { },
+                SelectAntivirusScanTab = () =>
+                {
+                    SelectNavigation("antivirus");
+                    _antivirusPage?.SelectScanTab();
+                },
+                SelectAntivirusQuarantineTab = () =>
+                {
+                    SelectNavigation("antivirus");
+                    _antivirusPage?.SelectQuarantineTab();
+                    WinUiServiceHost.Instance.Antivirus.LoadQuarantine();
+                },
+                SelectAntivirusSignaturesTab = () =>
+                {
+                    SelectNavigation("antivirus");
+                    _antivirusPage?.SelectSignaturesTab();
+                },
                 TriggerManualSignatureUpdate = () => _ = WinUiServiceHost.Instance.Antivirus.UpdateSignaturesAsync(),
             });
         });
 
     private void OnActionCompleted(object? sender, ActionResult result) =>
         DispatcherQueue.TryEnqueue(() => StatusText.Text = result.Message);
-
-    private void OpenLegacyApp_Click(object sender, RoutedEventArgs e)
-    {
-        var legacyExe = Path.Combine(AppContext.BaseDirectory, "optiCombat.exe");
-        if (!File.Exists(legacyExe))
-        {
-            StatusText.Text = "Application WPF non trouvée à côté du shell WinUI.";
-            return;
-        }
-
-        Process.Start(new ProcessStartInfo
-        {
-            FileName = legacyExe,
-            UseShellExecute = true
-        });
-    }
 }

@@ -9,7 +9,7 @@
             <RowDefinition Height="*" />
         </Grid.RowDefinitions>
 
-        <Border Padding="20,16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+        <Border Padding="20,16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -17,7 +17,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Spacing="4">
                     <TextBlock FontSize="24" FontWeight="SemiBold" Text="Antivirus" />
-                    <TextBlock x:Name="LastScanText" Foreground="{StaticResource TextMutedBrush}" Text="Aucune analyse" />
+                    <TextBlock x:Name="LastScanText" Foreground="{ThemeResource TextMutedBrush}" Text="Aucune analyse" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Ellipse x:Name="BadgeDot" Width="8" Height="8" Fill="{StaticResource AccentBrush}" />
@@ -26,8 +26,11 @@
             </Grid>
         </Border>
 
-        <TabView Grid.Row="1" Margin="0,14,0,0" IsAddTabButtonVisible="False">
+        <TabView x:Name="Tabs" Grid.Row="1" Margin="0,14,0,0" IsAddTabButtonVisible="False">
             <TabViewItem Header="Analyse" IsSelected="True">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE721;" />
+                </TabViewItem.IconSource>
                 <Grid RowSpacing="12">
                     <Grid.RowDefinitions>
                         <RowDefinition Height="Auto" />
@@ -54,17 +57,27 @@
                             </StackPanel>
                         </Button>
                         <StackPanel Grid.Column="2" Spacing="8">
-                            <Button Click="BrowseFolder_Click" Content="Dossier" />
-                            <Button Click="BrowseFile_Click" Content="Fichier" />
+                            <Button Click="BrowseFolder_Click" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE8B7;" FontSize="14" Foreground="{StaticResource AccentBrush}" />
+                                    <TextBlock Text="Scanner un dossier" />
+                                </StackPanel>
+                            </Button>
+                            <Button Click="BrowseFile_Click" MinHeight="40" HorizontalAlignment="Stretch" HorizontalContentAlignment="Left">
+                                <StackPanel Orientation="Horizontal" Spacing="8">
+                                    <FontIcon Glyph="&#xE7C3;" FontSize="14" Foreground="{StaticResource AccentBrush}" />
+                                    <TextBlock Text="Scanner un fichier" />
+                                </StackPanel>
+                            </Button>
                         </StackPanel>
                     </Grid>
 
-                    <Border x:Name="ScanProgressPanel" Grid.Row="1" Padding="16" Background="#F8FAFC"
-                            BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8" Visibility="Collapsed">
+                    <Border x:Name="ScanProgressPanel" Grid.Row="1" Padding="16" Background="{ThemeResource CardAltBackgroundBrush}"
+                            BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8" Visibility="Collapsed">
                         <StackPanel Spacing="10">
                             <ProgressBar x:Name="ScanProgressBar" IsIndeterminate="True" />
                             <TextBlock x:Name="ScanStatusText" TextWrapping="WrapWholeWords" />
-                            <TextBlock x:Name="ScanCurrentItemText" Foreground="{StaticResource TextMutedBrush}"
+                            <TextBlock x:Name="ScanCurrentItemText" Foreground="{ThemeResource TextMutedBrush}"
                                        FontSize="12" TextWrapping="WrapWholeWords" />
                             <Button Click="StopScan_Click" Content="Arrêter l'analyse" HorizontalAlignment="Left" />
                         </StackPanel>
@@ -82,7 +95,7 @@
                             <TextBlock x:Name="QuarantineCountText" Text="Quarantaine : 0" />
                             <Button Click="QuarantineAll_Click" Content="Tout mettre en quarantaine" />
                         </StackPanel>
-                        <Border Grid.Column="1" Padding="12" Background="White" BorderBrush="#E2E8F0"
+                        <Border Grid.Column="1" Padding="12" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}"
                                 BorderThickness="1" CornerRadius="8">
                             <StackPanel Spacing="8">
                                 <TextBlock FontWeight="SemiBold" Text="Menaces détectées" />
@@ -91,7 +104,7 @@
                                         <DataTemplate>
                                             <StackPanel Spacing="2">
                                                 <TextBlock FontWeight="SemiBold" Text="{Binding VirusName}" />
-                                                <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="12"
+                                                <TextBlock Foreground="{ThemeResource TextMutedBrush}" FontSize="12"
                                                            Text="{Binding FilePath}" TextWrapping="WrapWholeWords" />
                                             </StackPanel>
                                         </DataTemplate>
@@ -104,6 +117,9 @@
             </TabViewItem>
 
             <TabViewItem Header="Signatures">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE895;" />
+                </TabViewItem.IconSource>
                 <StackPanel Spacing="12">
                     <Grid ColumnSpacing="16">
                         <Grid.ColumnDefinitions>
@@ -113,12 +129,12 @@
                         <StackPanel Spacing="6">
                             <TextBlock FontWeight="SemiBold" Text="YARA" />
                             <TextBlock x:Name="YaraVersionText" FontSize="20" Text="—" />
-                            <TextBlock x:Name="YaraUpdateText" Foreground="{StaticResource TextMutedBrush}" Text="—" />
+                            <TextBlock x:Name="YaraUpdateText" Foreground="{ThemeResource TextMutedBrush}" Text="—" />
                         </StackPanel>
                         <StackPanel Grid.Column="1" Spacing="6">
                             <TextBlock FontWeight="SemiBold" Text="ClamAV" />
                             <TextBlock x:Name="ClamVersionText" FontSize="20" Text="—" />
-                            <TextBlock x:Name="ClamUpdateText" Foreground="{StaticResource TextMutedBrush}" Text="—" />
+                            <TextBlock x:Name="ClamUpdateText" Foreground="{ThemeResource TextMutedBrush}" Text="—" />
                         </StackPanel>
                     </Grid>
                     <Button Click="UpdateSignatures_Click" Content="Mettre à jour les signatures" HorizontalAlignment="Left" />
@@ -129,6 +145,9 @@
             </TabViewItem>
 
             <TabViewItem Header="Quarantaine">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE72E;" />
+                </TabViewItem.IconSource>
                 <StackPanel Spacing="10">
                     <TextBlock x:Name="QuarantineHeaderText" Text="Éléments en quarantaine" />
                     <ListView x:Name="QuarantineList" MinHeight="280">
@@ -142,7 +161,7 @@
                                     </Grid.ColumnDefinitions>
                                     <StackPanel Spacing="2">
                                         <TextBlock FontWeight="SemiBold" Text="{Binding FileName}" />
-                                        <TextBlock Foreground="{StaticResource TextMutedBrush}" FontSize="12" Text="{Binding VirusName}" />
+                                        <TextBlock Foreground="{ThemeResource TextMutedBrush}" FontSize="12" Text="{Binding VirusName}" />
                                     </StackPanel>
                                     <Button Grid.Column="1" Click="RestoreQuarantine_Click" Tag="{Binding Id}" Content="Restaurer" />
                                     <Button Grid.Column="2" Click="DeleteQuarantine_Click" Tag="{Binding Id}" Content="Supprimer" />

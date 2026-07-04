@@ -6,12 +6,18 @@ namespace optiCombat.WinUI.Views;
 
 public sealed partial class CleanPage : UserControl
 {
+    // Les Checked="Option_Changed" se déclenchent pendant InitializeComponent
+    // (IsChecked="True" en XAML) alors que les autres cases sont encore null.
+    private readonly bool _uiReady;
+
     public CleanViewModel ViewModel { get; }
 
     public CleanPage(CleanViewModel viewModel)
     {
         ViewModel = viewModel;
         InitializeComponent();
+        _uiReady = true;
+        SyncOptionsFromUi();
         ViewModel.PropertyChanged += (_, _) => DispatcherQueue.TryEnqueue(SyncUi);
         SyncUi();
     }
@@ -29,6 +35,9 @@ public sealed partial class CleanPage : UserControl
 
     private void SyncOptionsFromUi()
     {
+        if (!_uiReady)
+            return;
+
         ViewModel.TempWin = ChkTempWin.IsChecked == true;
         ViewModel.TempUser = ChkTempUser.IsChecked == true;
         ViewModel.Recycle = ChkRecycle.IsChecked == true;

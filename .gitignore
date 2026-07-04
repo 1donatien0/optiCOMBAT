@@ -84,20 +84,20 @@ secrets.json
 credentials.json
 
 # Binaires ClamAV / YARA (téléchargés via scripts/fetch-runtime-deps.ps1)
-optiCombat/clamav/x64/*.exe
-optiCombat/clamav/x64/*.dll
-optiCombat/clamav/x64/freshclam.conf
-optiCombat/clamav/x64/certs/
-optiCombat/clamav/x86/freshclam.conf
-optiCombat/clamav/database/freshclam-ci.log
-optiCombat/clamav/database/freshclam.log
-optiCombat/clamav/database/*.log
-optiCombat/clamav/x86/*.exe
-optiCombat/clamav/x86/*.dll
-optiCombat/clamav/database/*.cvd
-optiCombat/clamav/database/*.cld
-optiCombat/clamav/database/*.cud
-optiCombat/yara/*.exe
+runtime/clamav/x64/*.exe
+runtime/clamav/x64/*.dll
+runtime/clamav/x64/freshclam.conf
+runtime/clamav/x64/certs/
+runtime/clamav/x86/freshclam.conf
+runtime/clamav/database/freshclam-ci.log
+runtime/clamav/database/freshclam.log
+runtime/clamav/database/*.log
+runtime/clamav/x86/*.exe
+runtime/clamav/x86/*.dll
+runtime/clamav/database/*.cvd
+runtime/clamav/database/*.cld
+runtime/clamav/database/*.cud
+runtime/yara/*.exe
 publish/
 
 # Qualification panel (échantillons générés / malware réel / rapports)
@@ -153,3 +153,9 @@ scripts/generate-brand-assets.py
 scripts/refresh-shell-icons.ps1
 scripts/sync-installer-icon.ps1
 scripts/__pycache__/
+
+# Fichiers de sauvegarde et logs locaux (jamais versionnés)
+*.bak
+/_release-build.log
+/sign-all.log
+/sign-now.log

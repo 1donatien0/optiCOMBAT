@@ -80,7 +80,7 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
             ScanType.File => 3,
             _ => 0
         };
-        DarkTheme = WinUiApp.Current.RequestedTheme == ApplicationTheme.Dark;
+        DarkTheme = prefs.DarkTheme;
         AppVersionLabel = $"{ProductVersionInfo.ReleaseLabel} ({ProductVersionInfo.SemVer})";
 
         Exclusions.Clear();
@@ -219,9 +219,17 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     public void ApplyTheme(bool dark)
     {
         DarkTheme = dark;
-        WinUiApp.Current.RequestedTheme = dark ? ApplicationTheme.Dark : ApplicationTheme.Light;
+
+        // Ne jamais toucher à Application.RequestedTheme après le lancement :
+        // WinUI 3 lève une exception. Le thème se pilote au niveau de la racine visuelle.
         if (App.MainWindowInstance?.Content is FrameworkElement root)
             root.RequestedTheme = dark ? ElementTheme.Dark : ElementTheme.Light;
+
+        var prefs = _container.UserPreferencesAccessor.Current;
+        prefs.DarkTheme = dark;
+        prefs.SyncWindowsTheme = false;
+        prefs.Save();
+
         OnPropertyChanged(nameof(DarkTheme));
     }
 

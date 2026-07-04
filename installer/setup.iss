@@ -119,19 +119,19 @@ Name: "platformservice"; Description: "Protection système avancée — prévue 
 ; clamav\*, rules\* et yara\* sont exclus ici — gérés séparément ci-dessous.
 Source: "{#AppPublishSource}"; DestDir: "{app}"; Excludes: "clamav\*,rules\*,yara\*"; Flags: ignoreversion recursesubdirs createallsubdirs
 ; ── ClamAV (architecture-specific) — ignoré si le dossier n'existe pas (clone partiel) ──
-#if DirExists(AddBackslash(SourcePath) + "..\optiCombat\clamav\x64")
-Source: "..\optiCombat\clamav\x64\*"; DestDir: "{app}\clamav\x64"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsWin64
+#if DirExists(AddBackslash(SourcePath) + "..\runtime\clamav\x64")
+Source: "..\runtime\clamav\x64\*"; DestDir: "{app}\clamav\x64"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: IsWin64
 #endif
-#if DirExists(AddBackslash(SourcePath) + "..\optiCombat\clamav\x86")
-Source: "..\optiCombat\clamav\x86\*"; DestDir: "{app}\clamav\x86"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: not IsWin64
+#if DirExists(AddBackslash(SourcePath) + "..\runtime\clamav\x86")
+Source: "..\runtime\clamav\x86\*"; DestDir: "{app}\clamav\x86"; Flags: ignoreversion recursesubdirs createallsubdirs; Check: not IsWin64
 #endif
 ; Certificat CVD (freshclam ≥ 1.5) — skip si absent (évite l'échec de compilation ISCC)
-Source: "..\optiCombat\clamav\certs\clamav.crt"; DestDir: "{app}\clamav\x64\certs"; Flags: ignoreversion skipifsourcedoesntexist; Check: IsWin64
-Source: "..\optiCombat\clamav\certs\clamav.crt"; DestDir: "{app}\clamav\x86\certs"; Flags: ignoreversion skipifsourcedoesntexist; Check: not IsWin64
-Source: "..\optiCombat\clamav\database\*"; DestDir: "{app}\clamav\database"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\runtime\clamav\certs\clamav.crt"; DestDir: "{app}\clamav\x64\certs"; Flags: ignoreversion skipifsourcedoesntexist; Check: IsWin64
+Source: "..\runtime\clamav\certs\clamav.crt"; DestDir: "{app}\clamav\x86\certs"; Flags: ignoreversion skipifsourcedoesntexist; Check: not IsWin64
+Source: "..\runtime\clamav\database\*"; DestDir: "{app}\clamav\database"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 ; ── YARA ─────────────────────────────────────────────────────────────────────
-Source: "..\optiCombat\rules\*"; DestDir: "{app}\rules"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
-Source: "..\optiCombat\yara\*"; DestDir: "{app}\yara"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\runtime\rules\*"; DestDir: "{app}\rules"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
+Source: "..\runtime\yara\*"; DestDir: "{app}\yara"; Flags: ignoreversion recursesubdirs createallsubdirs skipifsourcedoesntexist
 ; ── Service Windows + composants natifs (optionnels si non compilés) ───────────
 Source: "{#AppPublishSource}\optiCombat.Service.exe"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\native\optiCombat.AmsiProvider\x64\Release\optiCombat.AmsiProvider.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist

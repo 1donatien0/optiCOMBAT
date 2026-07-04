@@ -2,7 +2,7 @@
 
 Antivirus Windows open source — shell **WinUI 3** (.NET 8), moteurs **ClamAV** + **YARA**, cœur natif **Rust** (`opticombat.dll`), design **Donaby Combat Aqua**.
 
-> **Branche active** : `dev` — WinUI 3 est le shell principal ; le projet WPF (`optiCombat/`) reste en coexistence legacy.
+> **Branche active** : `dev` — WinUI 3 est le shell unique. Le shell WPF legacy a été retiré (snapshot conservé hors dépôt).
 
 [![CI](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml/badge.svg)](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml)
 

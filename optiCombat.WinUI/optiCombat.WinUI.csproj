@@ -9,13 +9,13 @@
     <UseWinUI>true</UseWinUI>
     <EnableMsixTooling>false</EnableMsixTooling>
     <WindowsPackageType>None</WindowsPackageType>
-    <ApplicationManifest>..\optiCombat\app.manifest</ApplicationManifest>
+    <ApplicationManifest>app.manifest</ApplicationManifest>
     <AssemblyName>optiCombat</AssemblyName>
     <RootNamespace>optiCombat.WinUI</RootNamespace>
     <Company>optiCombat</Company>
     <Product>optiCombat v1.0 - WinUI 3</Product>
     <Copyright>Copyright 2026 Dona By</Copyright>
-    <ApplicationIcon>..\optiCombat\optiCombat.ico</ApplicationIcon>
+    <ApplicationIcon>..\assets\optiCombat.ico</ApplicationIcon>
   </PropertyGroup>
 
   <ItemGroup>
@@ -34,35 +34,35 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\optiCombat\optiCombat.ico" Link="Assets\optiCombat.ico">
+    <Content Include="..\assets\optiCombat.ico" Link="Assets\optiCombat.ico">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\optiCombat_hero.png" Link="Assets\optiCombat_hero.png">
+    <Content Include="..\assets\optiCombat_hero.png" Link="Assets\optiCombat_hero.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\optiCombat_shield.png" Link="Assets\optiCombat_shield.png">
+    <Content Include="..\assets\optiCombat_shield.png" Link="Assets\optiCombat_shield.png">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="..\optiCombat\clamav\x64\**\*" Exclude="..\optiCombat\clamav\x64\**\*.conf">
+    <Content Include="..\runtime\clamav\x64\**\*" Exclude="..\runtime\clamav\x64\**\*.conf">
       <Link>clamav\x64\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\clamav\database\**\*">
+    <Content Include="..\runtime\clamav\database\**\*">
       <Link>clamav\database\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\clamav\certs\clamav.crt">
+    <Content Include="..\runtime\clamav\certs\clamav.crt">
       <Link>clamav\certs\clamav.crt</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\rules\**\*">
+    <Content Include="..\runtime\rules\**\*">
       <Link>rules\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
-    <Content Include="..\optiCombat\yara\**\*">
+    <Content Include="..\runtime\yara\**\*">
       <Link>yara\%(RecursiveDir)%(Filename)%(Extension)</Link>
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>

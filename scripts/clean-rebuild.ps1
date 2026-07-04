@@ -5,7 +5,7 @@
     compilées sous l'ancien nom d'assembly).
 
 .NOTES
-    Fermer Visual Studio avant d'exécuter. N'efface PAS optiCombat\clamav\.
+    Fermer Visual Studio avant d'exécuter. N'efface PAS runtime\clamav\.
 #>
 [CmdletBinding()]
 param([string]$Configuration = "Debug")
@@ -34,9 +34,9 @@ foreach ($p in $projects) {
     }
 }
 
-# Sécurité : on n'a PAS touché optiCombat\clamav (binaires ClamAV).
-if (-not (Test-Path "optiCombat\clamav\x64\clamscan.exe")) {
-    Write-Warning "clamscan.exe introuvable — vérifier optiCombat\clamav\ !"
+# Sécurité : on n'a PAS touché runtime\clamav (binaires ClamAV).
+if (-not (Test-Path "runtime\clamav\x64\clamscan.exe")) {
+    Write-Warning "clamscan.exe introuvable — vérifier runtime\clamav\ !"
 }
 
 Write-Host "==> Restore + Build ($Configuration)..." -ForegroundColor Cyan

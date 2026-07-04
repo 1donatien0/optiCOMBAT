@@ -14,6 +14,10 @@ public sealed partial class AntivirusPage : UserControl, IAntivirusSignaturesPan
 {
     public AntivirusViewModel ViewModel { get; }
 
+    // Onglet demandé avant que le TabView soit chargé (IsSelected="True" du
+    // premier onglet écraserait la sélection) — appliqué au Loaded.
+    private int _pendingTabIndex = -1;
+
     public AntivirusPage(AntivirusViewModel viewModel)
     {
         ViewModel = viewModel;
@@ -22,8 +26,34 @@ public sealed partial class AntivirusPage : UserControl, IAntivirusSignaturesPan
         ThreatsList.ItemsSource = ViewModel.Threats;
         QuarantineList.ItemsSource = ViewModel.QuarantineEntries;
         ViewModel.PropertyChanged += (_, e) => DispatcherQueue.TryEnqueue(SyncUi);
-        Loaded += async (_, _) => await ViewModel.InitializeAsync();
+        Loaded += async (_, _) =>
+        {
+            if (_pendingTabIndex >= 0)
+            {
+                Tabs.SelectedIndex = _pendingTabIndex;
+                _pendingTabIndex = -1;
+            }
+            await ViewModel.InitializeAsync();
+        };
         SyncUi();
+    }
+
+    /// <summary>Sélectionne l'onglet Analyse (0), Signatures (1) ou Quarantaine (2).</summary>
+    public void SelectScanTab() => SelectTab(0);
+
+    public void SelectSignaturesTab() => SelectTab(1);
+
+    public void SelectQuarantineTab() => SelectTab(2);
+
+    private void SelectTab(int index)
+    {
+        if (!IsLoaded)
+        {
+            _pendingTabIndex = index;
+            return;
+        }
+
+        Tabs.SelectedIndex = index;
     }
 
     public void UpdateSignaturesPanel(string yaraVersion, string yaraLastMaj, string clamVersion, string clamLastMaj)

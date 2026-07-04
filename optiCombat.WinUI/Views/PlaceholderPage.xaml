@@ -9,15 +9,15 @@
             Padding="28"
             HorizontalAlignment="Left"
             VerticalAlignment="Top"
-            Background="White"
-            BorderBrush="#E2E8F0"
+            Background="{ThemeResource CardBackgroundBrush}"
+            BorderBrush="{ThemeResource CardBorderBrush}"
             BorderThickness="1"
             CornerRadius="8">
             <StackPanel Spacing="10">
                 <TextBlock x:Name="TitleText" FontSize="28" FontWeight="SemiBold" />
                 <TextBlock
                     x:Name="BodyText"
-                    Foreground="{StaticResource TextMutedBrush}"
+                    Foreground="{ThemeResource TextMutedBrush}"
                     FontSize="15"
                     TextWrapping="WrapWholeWords" />
             </StackPanel>

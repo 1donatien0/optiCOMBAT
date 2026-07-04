@@ -12,7 +12,7 @@
             <RowDefinition Height="220" MinHeight="160" />
         </Grid.RowDefinitions>
 
-        <Border Padding="20,16" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+        <Border Padding="20,16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
             <Grid ColumnSpacing="16">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="*" />
@@ -20,7 +20,7 @@
                 </Grid.ColumnDefinitions>
                 <StackPanel Spacing="4">
                     <TextBlock FontSize="24" FontWeight="SemiBold" Text="Historique" />
-                    <TextBlock Foreground="{StaticResource TextMutedBrush}" Text="Journal d'activité — analyses, nettoyages et quarantaine" />
+                    <TextBlock Foreground="{ThemeResource TextMutedBrush}" Text="Journal d'activité — analyses, nettoyages et quarantaine" />
                 </StackPanel>
                 <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" VerticalAlignment="Center">
                     <Button Click="ExportHtml_Click" Content="Export HTML" />
@@ -45,7 +45,7 @@
             <TextBox Grid.Column="1" PlaceholderText="Rechercher…" TextChanged="Search_TextChanged" />
         </Grid>
 
-        <Border Grid.Row="2" Background="White" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+        <Border Grid.Row="2" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
             <Grid>
                 <ListView x:Name="TimelineList" SelectionChanged="TimelineList_SelectionChanged">
                     <ListView.ItemTemplate>
@@ -61,16 +61,16 @@
                                 <TextBlock Text="{Binding DateDisplay}" FontSize="12" />
                                 <TextBlock Grid.Column="1" Text="{Binding TypeDisplay}" FontSize="12" />
                                 <TextBlock Grid.Column="2" Text="{Binding TargetDisplay}" TextTrimming="CharacterEllipsis" FontSize="12" />
-                                <TextBlock Grid.Column="3" Text="{Binding DetailDisplay}" FontSize="12" Foreground="{StaticResource TextMutedBrush}" />
+                                <TextBlock Grid.Column="3" Text="{Binding DetailDisplay}" FontSize="12" Foreground="{ThemeResource TextMutedBrush}" />
                                 <TextBlock Grid.Column="4" Text="{Binding ResultSummary}" FontWeight="SemiBold" FontSize="12" />
                             </Grid>
                         </DataTemplate>
                     </ListView.ItemTemplate>
                 </ListView>
                 <StackPanel x:Name="EmptyState" HorizontalAlignment="Center" VerticalAlignment="Center" Spacing="8" Visibility="Collapsed">
-                    <FontIcon Glyph="&#xE81C;" FontSize="36" Foreground="{StaticResource TextMutedBrush}" />
+                    <FontIcon Glyph="&#xE81C;" FontSize="36" Foreground="{ThemeResource TextMutedBrush}" />
                     <TextBlock x:Name="EmptyTitleText" FontSize="16" FontWeight="SemiBold" HorizontalAlignment="Center" />
-                    <TextBlock x:Name="EmptySubtitleText" Foreground="{StaticResource TextMutedBrush}" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" MaxWidth="420" />
+                    <TextBlock x:Name="EmptySubtitleText" Foreground="{ThemeResource TextMutedBrush}" HorizontalAlignment="Center" TextWrapping="WrapWholeWords" MaxWidth="420" />
                 </StackPanel>
             </Grid>
         </Border>
@@ -80,14 +80,14 @@
                 <ColumnDefinition Width="*" />
                 <ColumnDefinition Width="Auto" />
             </Grid.ColumnDefinitions>
-            <TextBlock x:Name="SessionInfoText" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" FontSize="12" TextWrapping="WrapWholeWords" />
+            <TextBlock x:Name="SessionInfoText" VerticalAlignment="Center" Foreground="{ThemeResource TextMutedBrush}" FontSize="12" TextWrapping="WrapWholeWords" />
             <StackPanel Grid.Column="1" Orientation="Horizontal" Spacing="8" x:Name="ScanActionsPanel" Visibility="Collapsed">
                 <Button Click="TreatInAntivirus_Click" Content="Traiter dans Antivirus" />
                 <Button Click="QuarantineAll_Click" Content="Tout mettre en quarantaine" />
             </StackPanel>
         </Grid>
 
-        <Border Grid.Row="4" Padding="16" Background="#F8FAFC" BorderBrush="#E2E8F0" BorderThickness="1" CornerRadius="8">
+        <Border Grid.Row="4" Padding="16" Background="{ThemeResource CardAltBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
             <Grid>
                 <StackPanel x:Name="ScanDetailPanel" Spacing="8" Visibility="Collapsed">
                     <TextBlock x:Name="DetailText" TextWrapping="WrapWholeWords" />
@@ -121,14 +121,14 @@
                 <StackPanel x:Name="QuarantineDetailPanel" Spacing="10" Visibility="Collapsed">
                     <TextBlock x:Name="QuarTitleText" FontWeight="SemiBold" FontSize="16" />
                     <TextBlock x:Name="QuarPathText" TextWrapping="WrapWholeWords" FontSize="12" />
-                    <TextBlock x:Name="QuarMetaText" Foreground="{StaticResource TextMutedBrush}" FontSize="12" />
+                    <TextBlock x:Name="QuarMetaText" Foreground="{ThemeResource TextMutedBrush}" FontSize="12" />
                     <StackPanel Orientation="Horizontal" Spacing="8">
                         <Button Click="ViewSourceScan_Click" Content="Voir scan source" x:Name="ViewSourceScanButton" Visibility="Collapsed" />
                         <Button Click="ManageInAv_Click" Content="Gérer dans Antivirus" />
                     </StackPanel>
                 </StackPanel>
 
-                <TextBlock x:Name="NoSelectionText" VerticalAlignment="Center" Foreground="{StaticResource TextMutedBrush}" Text="Sélectionnez une entrée dans la timeline." />
+                <TextBlock x:Name="NoSelectionText" VerticalAlignment="Center" Foreground="{ThemeResource TextMutedBrush}" Text="Sélectionnez une entrée dans la timeline." />
             </Grid>
         </Border>
     </Grid>
