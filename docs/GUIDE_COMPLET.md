@@ -641,7 +641,7 @@ cargo test --workspace --manifest-path engine/Cargo.toml
 | `codeql.yml` | push / PR + hebdo | CodeQL C#, Rust, GitHub Actions |
 | `gitleaks.yml` | push / PR + hebdo | Recherche de secrets |
 | `dependency-review.yml` | PR | Bloque les dépendances vulnérables *high* |
-| `dependabot.yml` | hebdo | NuGet, Cargo (`engine/`), Actions → `dev` |
+| `dependabot.yml` | hebdo | NuGet, Cargo (`engine/`), Actions → PRs groupées (mineur/patch) vers `dev` ; branches `dependabot/…` temporaires, à fermer après reprise sous `dev` |
 
 Le panel de qualification (`scripts/qualify-detection.ps1`, [qualification/README.md](../qualification/README.md)) se lance localement ; il n’est pas encore exécuté en CI.
 
