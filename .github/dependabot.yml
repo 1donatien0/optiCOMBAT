@@ -4,19 +4,34 @@ updates:
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 3
     target-branch: dev
+    groups:
+      nuget-non-major:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: cargo
     directory: /engine
     schedule:
       interval: weekly
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 3
     target-branch: dev
+    groups:
+      cargo-non-major:
+        update-types:
+          - "minor"
+          - "patch"
 
   - package-ecosystem: github-actions
     directory: /
     schedule:
       interval: weekly
-    open-pull-requests-limit: 0
+    open-pull-requests-limit: 3
     target-branch: dev
+    groups:
+      actions-non-major:
+        update-types:
+          - "minor"
+          - "patch"
