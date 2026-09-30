@@ -1,0 +1,27 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Donaby Combat Aqua — thème clair.
+         Jeu de clés IDENTIQUE dans Combat.Light / Combat.Dark / Combat.HighContrast
+         (vérifié par scripts/check-winui-theme-keys.ps1, aussi exécuté en CI).
+         Toujours référencer ces brosses en {ThemeResource}, jamais en {StaticResource}. -->
+
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#F5F7FB" />
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardAltBackgroundBrush" Color="#F8FAFC" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#E2E8F0" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#64748B" />
+    <SolidColorBrush x:Key="OnAccentForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#0F9F8F" />
+    <SolidColorBrush x:Key="AccentTintBrush" Color="#ECFDF5" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#2563EB" />
+    <SolidColorBrush x:Key="VioletBrush" Color="#7C3AED" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#D97706" />
+    <SolidColorBrush x:Key="WarningTintBrush" Color="#FFF7ED" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#FDBA74" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#C0392B" />
+
+</ResourceDictionary>

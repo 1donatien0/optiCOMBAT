@@ -1,0 +1,44 @@
+﻿
+; ── Signature Authenticode (optionnelle) ─────────────────────────────────────
+; Décommenter les lignes ci-dessous dans installer/setup.iss si vous disposez
+; d'un certificat de signature de code (.pfx). Voir README.md §8.
+;
+; Prérequis locaux
+;   - Windows SDK (signtool.exe dans le PATH ou chemin complet)
+;   - Certificat .pfx émis par une AC reconnue (DigiCert, Sectigo, etc.)
+;
+; Fichiers à signer (ordre recommandé)
+;   1. optiCombat.exe (dossier publish win-x64)
+;   2. optiCombat_Setup_v1.0.0.exe (sortie Inno)
+;
+; Secrets GitHub Actions (job publish sur main)
+;   CODESIGN_PFX       — contenu base64 du fichier .pfx
+;   CODESIGN_PASSWORD  — mot de passe du certificat
+; Exemple d'étape CI (après ISCC, avant upload artefact) :
+;
+;   - name: Import code signing certificate
+;     if: env.CODESIGN_PFX != ''
+;     shell: pwsh
+;     env:
+;       CODESIGN_PFX: ${{ secrets.CODESIGN_PFX }}
+;       CODESIGN_PASSWORD: ${{ secrets.CODESIGN_PASSWORD }}
+;     run: |
+;       $bytes = [Convert]::FromBase64String($env:CODESIGN_PFX)
+;       [IO.File]::WriteAllBytes('codesign.pfx', $bytes)
+;
+;   - name: Sign setup executable
+;     if: env.CODESIGN_PFX != ''
+;     shell: pwsh
+;     run: |
+;       signtool sign /fd SHA256 /f codesign.pfx /p $env:CODESIGN_PASSWORD `
+;         /tr http://timestamp.digicert.com /td SHA256 `
+;         installer\output\optiCombat_Setup_v1.0.0.exe
+;
+; Configuration Inno Setup — ajouter dans [Setup] :
+;
+; [Setup]
+; SignTool=opticombat
+; SignedUninstaller=yes
+;
+; [SignTools]
+; Name: "opticombat"; Command: "signtool sign /fd SHA256 /f $qC:\chemin\cert.pfx$q /p $qMotDePasse$q /tr http://timestamp.digicert.com /td SHA256 $f"

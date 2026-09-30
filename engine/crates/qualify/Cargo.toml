@@ -1,0 +1,16 @@
+[package]
+name = "qualify"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "oc-qualify"
+path = "src/main.rs"
+
+[dependencies]
+dispatcher = { path = "../dispatcher" }
+engine-core = { path = "../engine-core" }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
