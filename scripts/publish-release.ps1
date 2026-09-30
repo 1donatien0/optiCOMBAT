@@ -1,0 +1,119 @@
+<#
+.SYNOPSIS
+    Publication Release fiable d'optiCombat + compilation de l'installeur Inno.
+
+.DESCRIPTION
+    Contourne l'UI de publication de Visual Studio (peu fiable) en utilisant
+    directement `dotnet publish`. Gère les causes classiques d'échec :
+      - arrête la tâche planifiée optiCombat_Watchdog (qui relance l'exe),
+      - termine tout optiCombat.exe / optiCombat.Service.exe en cours (verrous de fichiers),
+      - nettoie le dossier publish périmé,
+      - publie en Release win-x64 (framework-dependent par défaut, comme optiSCAN Setup ~27 Mo),
+      - (optionnel) signe l'exe si un certificat est fourni,
+      - compile l'installeur Inno (ISCC) si disponible.
+
+.PARAMETER Configuration
+    Configuration de build (défaut: Release).
+
+.PARAMETER Runtime
+    RID cible (défaut: win-x64).
+
+.PARAMETER SelfContained
+    Publier en self-contained (inclut le runtime .NET). Défaut: $false (installeur léger).
+
+.PARAMETER FrameworkDependent
+    Alias explicite du défaut : sans runtime embarqué (.NET 8 Desktop requis chez l'utilisateur).
+
+.PARAMETER SignToolPath / CertSubject
+    Si fournis, signe optiCombat.exe avec signtool (certificat du magasin par sujet).
+
+.PARAMETER SkipInstaller
+    Ne pas compiler l'installeur Inno.
+
+.EXAMPLE
+    pwsh -File scripts\publish-release.ps1
+    pwsh -File scripts\publish-release.ps1 -SelfContained
+    pwsh -File scripts\publish-release.ps1 -CertSubject "Dona By"
+#>
+[CmdletBinding()]
+param(
+    [string]$Configuration = 'Release',
+    [string]$Runtime = 'win-x64',
+    [switch]$SelfContained,
+    [switch]$FrameworkDependent,
+    [string]$SignToolPath,
+    [string]$CertSubject,
+    [switch]$SkipInstaller
+)
+
+$ErrorActionPreference = 'Stop'
+$repo = Split-Path -Parent $PSScriptRoot
+$proj = Join-Path $repo 'optiCombat.WinUI\optiCombat.WinUI.csproj'
+$tfm  = 'net8.0-windows10.0.19041.0'
+$publishDir = Join-Path $repo "optiCombat.WinUI\bin\$Configuration\$tfm\publish\$Runtime"
+
+function Write-Step($m) { Write-Host "`n=== $m ===" -ForegroundColor Cyan }
+
+# 1) Neutraliser le watchdog qui relance optiCombat pendant le build
+Write-Step 'Arrêt du watchdog anti-sabotage'
+schtasks.exe /Change /TN 'optiCombat_Watchdog' /DISABLE 2>$null | Out-Null
+schtasks.exe /End    /TN 'optiCombat_Watchdog' 2>$null | Out-Null
+
+# 2) Terminer les instances qui verrouillent les binaires
+Write-Step 'Fermeture des instances optiCombat'
+foreach ($p in 'optiCombat','optiCombat.Service') {
+    Get-Process -Name $p -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+}
+Start-Sleep -Milliseconds 500
+
+# 3) Nettoyer le dossier publish périmé
+Write-Step 'Nettoyage du dossier publish'
+if (Test-Path $publishDir) { Remove-Item -Recurse -Force $publishDir }
+
+# 4) Publier (framework-dependent par défaut — aligné sur optiSCAN Setup léger)
+$publishSelfContained = if ($FrameworkDependent) { $false } elseif ($SelfContained) { $true } else { $false }
+$profile = if ($publishSelfContained) { 'FolderProfile-SelfContained' } else { 'FolderProfile' }
+Write-Step "dotnet publish ($Configuration / $Runtime / profile=$profile / self-contained=$publishSelfContained)"
+dotnet publish $proj -c $Configuration /p:PublishProfile=$profile -p:CleanPublishArtifactsBeforePublish=true
+if ($LASTEXITCODE -ne 0) { throw "dotnet publish a échoué (code $LASTEXITCODE)." }
+# Le profil écrit dans publish\win-x64\ (chemin Inno) ; conserver aussi $publishDir si RID plat.
+$profilePublishDir = Join-Path $repo "optiCombat.WinUI\bin\$Configuration\$tfm\publish\$Runtime"
+if ((Test-Path (Join-Path $profilePublishDir 'optiCombat.exe')) -and ($profilePublishDir -ne $publishDir)) {
+    $publishDir = $profilePublishDir
+}
+
+$exe = Join-Path $publishDir 'optiCombat.exe'
+if (-not (Test-Path $exe)) { throw "optiCombat.exe introuvable après publish : $exe" }
+Write-Host "Publié : $exe" -ForegroundColor Green
+
+# 5) Signature Authenticode (certificat EV via thumbprint ou sujet)
+if ($env:OPTICOMBAT_SIGN_THUMBPRINT) {
+    Write-Step 'Signature EV (OPTICOMBAT_SIGN_THUMBPRINT)'
+    & (Join-Path $repo 'scripts\sign-release.ps1') -PublishDir $publishDir
+    if ($LASTEXITCODE -ne 0) { throw "sign-release.ps1 a échoué." }
+    & (Join-Path $repo 'scripts\verify-signatures.ps1') -PublishDir $publishDir -Strict
+}
+elseif ($CertSubject) {
+    Write-Step 'Signature Authenticode de optiCombat.exe'
+    $st = if ($SignToolPath) { $SignToolPath } else { 'signtool.exe' }
+    & $st sign /n $CertSubject /fd SHA256 /tr http://timestamp.digicert.com /td SHA256 $exe
+    if ($LASTEXITCODE -ne 0) { throw "signtool a échoué (code $LASTEXITCODE)." }
+}
+else {
+    Write-Warning "Pas de signature (paramètre -CertSubject non fourni). SmartScreen affichera « éditeur inconnu »."
+}
+
+# 6) Compiler l'installeur Inno
+if (-not $SkipInstaller) {
+    Write-Step 'Compilation de l''installeur Inno'
+    $buildSetup = Join-Path $repo 'installer\build-release-setup.ps1'
+    if (-not (Test-Path -LiteralPath $buildSetup)) { throw "Introuvable : $buildSetup" }
+    & $buildSetup -SkipPublish -AllowMissingSignatures
+    if ($LASTEXITCODE -ne 0) { throw "build-release-setup a échoué (code $LASTEXITCODE)." }
+}
+
+# 7) Réactiver le watchdog
+Write-Step 'Réactivation du watchdog'
+schtasks.exe /Change /TN 'optiCombat_Watchdog' /ENABLE 2>$null | Out-Null
+
+Write-Host "`nTerminé." -ForegroundColor Green

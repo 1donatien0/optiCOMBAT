@@ -1,0 +1,2 @@
+# Fichier texte bénin pour le panel de qualification.
+Hello optiCombat qualification panel.

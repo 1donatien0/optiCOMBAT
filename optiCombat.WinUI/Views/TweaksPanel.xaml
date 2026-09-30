@@ -1,0 +1,94 @@
+<UserControl
+    x:Class="optiCombat.WinUI.Views.TweaksPanel"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:optiCombat.WinUI.Services">
+
+    <ScrollViewer VerticalScrollBarVisibility="Auto">
+        <StackPanel Spacing="12" Padding="0,12,0,12">
+            <!-- Actions -->
+            <Border Padding="12,8" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="8">
+                    <StackPanel Orientation="Horizontal" Spacing="10">
+                        <ProgressRing Width="22" Height="22" VerticalAlignment="Center"
+                                      IsActive="{x:Bind ViewModel.IsBusy, Mode=OneWay}"
+                                      Visibility="{x:Bind ViewModel.IsBusy, Mode=OneWay}" />
+                        <Button Click="Apply_Click" MinWidth="140"
+                                Style="{StaticResource AccentButtonStyle}"
+                                IsEnabled="{x:Bind ViewModel.CanApply, Mode=OneWay}">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE73E;" FontSize="14" />
+                                <TextBlock VerticalAlignment="Center" loc:Loc.Text="Twk_Apply" />
+                            </StackPanel>
+                        </Button>
+                        <Button Click="Startup_Click">
+                            <StackPanel Orientation="Horizontal" Spacing="8">
+                                <FontIcon Glyph="&#xE7E8;" FontSize="14" />
+                                <TextBlock VerticalAlignment="Center" loc:Loc.Text="Twk_Startup" />
+                            </StackPanel>
+                        </Button>
+                    </StackPanel>
+                    <TextBlock Foreground="{ThemeResource TextMutedBrush}" FontSize="12" TextWrapping="WrapWholeWords" loc:Loc.Text="Twk_ElevNote" />
+                </StackPanel>
+            </Border>
+
+            <!-- Tweaks : 2 colonnes pour que les 4 sections (14 réglages) soient visibles d'un coup -->
+            <Border Padding="16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <Grid ColumnSpacing="32">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="*" />
+                    </Grid.ColumnDefinitions>
+
+                    <StackPanel Grid.Column="0" Spacing="10">
+                        <TextBlock FontWeight="SemiBold" loc:Loc.Text="Twk_SectionPerf" />
+                        <StackPanel Spacing="2">
+                            <CheckBox IsChecked="{x:Bind ViewModel.PowerPlan, Mode=TwoWay}" loc:Loc.Content="Twk_PowerPlan" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.VisualFx, Mode=TwoWay}" loc:Loc.Content="Twk_VisualFx" />
+                        </StackPanel>
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,6,0,0" loc:Loc.Text="Twk_SectionPrivacy" />
+                        <StackPanel Spacing="2">
+                            <CheckBox IsChecked="{x:Bind ViewModel.Telemetry, Mode=TwoWay}" loc:Loc.Content="Twk_Telemetry" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.Ads, Mode=TwoWay}" loc:Loc.Content="Twk_Ads" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.Suggestions, Mode=TwoWay}" loc:Loc.Content="Twk_Suggestions" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.Tailored, Mode=TwoWay}" loc:Loc.Content="Twk_Tailored" />
+                        </StackPanel>
+                    </StackPanel>
+
+                    <StackPanel Grid.Column="1" Spacing="10">
+                        <TextBlock FontWeight="SemiBold" loc:Loc.Text="Twk_SectionUi" />
+                        <StackPanel Spacing="2">
+                            <CheckBox IsChecked="{x:Bind ViewModel.ShowExt, Mode=TwoWay}" loc:Loc.Content="Twk_ShowExt" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.ShowHidden, Mode=TwoWay}" loc:Loc.Content="Twk_ShowHidden" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.TaskbarLeft, Mode=TwoWay}" loc:Loc.Content="Twk_TaskbarLeft" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.HideWidgets, Mode=TwoWay}" loc:Loc.Content="Twk_HideWidgets" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.SearchIcon, Mode=TwoWay}" loc:Loc.Content="Twk_SearchIcon" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.ThisPc, Mode=TwoWay}" loc:Loc.Content="Twk_ThisPC" />
+                        </StackPanel>
+
+                        <TextBlock FontWeight="SemiBold" Margin="0,6,0,0" loc:Loc.Text="Twk_SectionMaint" />
+                        <StackPanel Spacing="2">
+                            <CheckBox IsChecked="{x:Bind ViewModel.Dism, Mode=TwoWay}" loc:Loc.Content="Twk_Dism" />
+                            <CheckBox IsChecked="{x:Bind ViewModel.DefenderHistory, Mode=TwoWay}" loc:Loc.Content="Twk_DefenderHistory" />
+                        </StackPanel>
+                    </StackPanel>
+                </Grid>
+            </Border>
+
+            <!-- Journal -->
+            <Border Padding="16" Background="{ThemeResource CardAltBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="160" />
+                    </Grid.RowDefinitions>
+                    <TextBlock FontWeight="SemiBold" loc:Loc.Text="Twk_LogTitle" />
+                    <ScrollViewer x:Name="LogScroll" Grid.Row="1" VerticalScrollBarVisibility="Auto">
+                        <TextBlock Text="{x:Bind ViewModel.LogText, Mode=OneWay}" FontFamily="Consolas" FontSize="12" TextWrapping="WrapWholeWords" IsTextSelectionEnabled="True" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,158 @@
+<UserControl
+    x:Class="optiCombat.WinUI.Views.CleanPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:optiCombat.WinUI.Services">
+
+    <Grid Padding="24,20" RowSpacing="14">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="20,16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="4">
+                <TextBlock FontSize="24" FontWeight="SemiBold" loc:Loc.Text="Nav_Clean" />
+                <TextBlock Foreground="{ThemeResource TextMutedBrush}" loc:Loc.Text="Clean_Subtitle" />
+            </StackPanel>
+        </Border>
+
+        <!-- Panneau Optimiser : Nettoyage / Mises à jour / Tweaks -->
+        <TabView x:Name="OptimiserTabs" Grid.Row="1" IsAddTabButtonVisible="False" TabWidthMode="SizeToContent"
+                 CanDragTabs="False" CanReorderTabs="False" AllowDropTabs="False">
+            <TabViewItem x:Name="CleanTab" IsClosable="False" loc:Loc.Header="Opti_TabClean">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE74D;" />
+                </TabViewItem.IconSource>
+
+    <Grid RowSpacing="14" Padding="0,14,0,0">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Grid ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+            <Border Padding="16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" loc:Loc.Text="Clean_SystemTemps" />
+                    <TextBlock x:Name="TempSizeText" FontSize="22" FontWeight="Bold" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="1" Padding="16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" loc:Loc.Text="Clean_BrowserCaches" />
+                    <TextBlock x:Name="BrowserSizeText" FontSize="22" FontWeight="Bold" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+            <Border Grid.Column="2" Padding="16" Background="{ThemeResource AccentBrush}" CornerRadius="8">
+                <StackPanel Spacing="4">
+                    <TextBlock FontWeight="SemiBold" Foreground="{ThemeResource OnAccentForegroundBrush}" loc:Loc.Text="Clean_TotalRecoverable" />
+                    <TextBlock x:Name="TotalSizeText" FontSize="22" FontWeight="Bold" Foreground="{ThemeResource OnAccentForegroundBrush}" Text="0 Mo" />
+                </StackPanel>
+            </Border>
+        </Grid>
+
+        <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+            <Button Click="Analyze_Click" loc:Loc.Content="Clean_Analyze" x:Name="AnalyzeButton" />
+            <Button Click="Clean_Click" loc:Loc.Content="Clean_Run" Background="{ThemeResource AccentBrush}" Foreground="{ThemeResource OnAccentForegroundBrush}" x:Name="CleanButton" IsEnabled="False" />
+            <ProgressRing x:Name="BusyRing" Width="24" Height="24" Visibility="Collapsed" />
+        </StackPanel>
+
+        <Grid Grid.Row="2" ColumnSpacing="12">
+            <Grid.ColumnDefinitions>
+                <ColumnDefinition Width="*" />
+                <ColumnDefinition Width="*" />
+            </Grid.ColumnDefinitions>
+
+            <Border Padding="16" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="10">
+                    <TextBlock FontWeight="SemiBold" loc:Loc.Text="Clean_System" />
+                    <Grid ColumnSpacing="12" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <CheckBox x:Name="ChkWUCache" Grid.Row="2" loc:Loc.Content="Clean_WUCacheCb" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkDns" Grid.Row="2" Grid.Column="1" loc:Loc.Content="Clean_DnsCb" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkTempWin" loc:Loc.Content="Clean_TempWinCb" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkTempUser" Grid.Column="1" loc:Loc.Content="Clean_TempUserCb" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkRecycle" Grid.Row="1" loc:Loc.Content="Clean_RecycleCb" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkLogs" Grid.Row="1" Grid.Column="1" loc:Loc.Content="Clean_WindowsLogsCb" Checked="Option_Changed" Unchecked="Option_Changed" />
+                    </Grid>
+                    <TextBlock FontWeight="SemiBold" Margin="0,6,0,0" loc:Loc.Text="Clean_BrowsersSection" />
+                    <Grid ColumnSpacing="12" RowSpacing="8">
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="*" />
+                        </Grid.ColumnDefinitions>
+                        <Grid.RowDefinitions>
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                            <RowDefinition Height="Auto" />
+                        </Grid.RowDefinitions>
+                        <CheckBox x:Name="ChkEdge" Content="Microsoft Edge" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkChrome" Grid.Column="1" Content="Google Chrome" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkFirefox" Grid.Row="1" Content="Mozilla Firefox" IsChecked="True" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkBrave" Grid.Row="1" Grid.Column="1" Content="Brave" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkOpera" Grid.Row="2" Content="Opera" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkVivaldi" Grid.Row="2" Grid.Column="1" Content="Vivaldi" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkArc" Grid.Row="3" Content="Arc" Checked="Option_Changed" Unchecked="Option_Changed" />
+                        <CheckBox x:Name="ChkHistory" Grid.Row="3" Grid.Column="1" loc:Loc.Content="Clean_HistoryCb" loc:Loc.Tip="Clean_HistoryTooltip" Checked="Option_Changed" Unchecked="Option_Changed" />
+                    </Grid>
+                </StackPanel>
+            </Border>
+
+            <Border Grid.Column="1" Padding="16" Background="{ThemeResource CardAltBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+                <Grid RowSpacing="8">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="Auto" />
+                        <RowDefinition Height="*" />
+                    </Grid.RowDefinitions>
+                    <Grid>
+                        <Grid.ColumnDefinitions>
+                            <ColumnDefinition Width="*" />
+                            <ColumnDefinition Width="Auto" />
+                        </Grid.ColumnDefinitions>
+                        <TextBlock FontWeight="SemiBold" VerticalAlignment="Center" loc:Loc.Text="Clean_LogTitle" />
+                        <Button x:Name="CopyLogButton" Grid.Column="1" Click="CopyLog_Click" Padding="10,4">
+                            <StackPanel Orientation="Horizontal" Spacing="6">
+                                <FontIcon Glyph="&#xE8C8;" FontSize="14" />
+                                <TextBlock loc:Loc.Text="Clean_CopyLog" />
+                            </StackPanel>
+                        </Button>
+                    </Grid>
+                    <ScrollViewer Grid.Row="1">
+                        <TextBlock x:Name="LogText" FontFamily="Consolas" FontSize="12" TextWrapping="WrapWholeWords" IsTextSelectionEnabled="True" />
+                    </ScrollViewer>
+                </Grid>
+            </Border>
+        </Grid>
+    </Grid>
+            </TabViewItem>
+
+            <TabViewItem x:Name="UpdatesTab" IsClosable="False" loc:Loc.Header="Opti_TabUpdates">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE895;" />
+                </TabViewItem.IconSource>
+            </TabViewItem>
+
+            <TabViewItem x:Name="TweaksTab" IsClosable="False" loc:Loc.Header="Opti_TabTweaks">
+                <TabViewItem.IconSource>
+                    <FontIconSource Glyph="&#xE713;" />
+                </TabViewItem.IconSource>
+            </TabViewItem>
+        </TabView>
+    </Grid>
+</UserControl>
