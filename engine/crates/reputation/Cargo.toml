@@ -7,7 +7,7 @@ license.workspace = true
 
 [dependencies]
 engine-core = { path = "../engine-core" }
-sha2 = "0.10"
+sha2 = "0.11"
 ureq = { version = "2", optional = true, default-features = false, features = ["tls"] }
 
 [features]
