@@ -7,4 +7,4 @@ license.workspace = true
 
 [dependencies]
 engine-core = { path = "../engine-core" }
-aes-gcm = "0.10"
+aes-gcm = "0.11"
