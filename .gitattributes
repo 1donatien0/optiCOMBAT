@@ -1,0 +1,59 @@
+# Fins de ligne normalisées : LF dans le dépôt, CRLF/LF natif à l'extraction.
+# Évite les « fichiers modifiés » fantômes entre postes Windows, WSL/Linux et la CI,
+# quelle que soit la valeur locale de core.autocrlf.
+* text=auto
+
+*.cs         text diff=csharp
+*.xaml       text
+*.csproj     text
+*.vcxproj    text eol=crlf
+*.sln        text eol=crlf
+*.props      text
+*.targets    text
+*.pubxml     text
+*.runsettings text
+*.resx       text
+*.manifest   text
+*.config     text
+*.editorconfig text
+*.rs         text diff=rust
+*.toml       text
+Cargo.lock   text
+*.c          text
+*.cpp        text diff=cpp
+*.h          text
+*.def        text
+*.inf        text eol=crlf
+*.iss        text eol=crlf
+*.ps1        text eol=crlf
+*.cmd        text eol=crlf
+*.bat        text eol=crlf
+*.sh         text eol=lf
+*.py         text diff=python
+*.yml        text
+*.yaml       text
+*.json       text
+*.jsonl      text
+*.md         text diff=markdown
+*.txt        text
+*.yar        text
+
+# Binaires
+*.png        binary
+*.jpg        binary
+*.ico        binary
+*.dll        binary
+*.exe        binary
+*.sys        binary
+*.cat        binary
+*.zip        binary
+*.crt        binary
+*.pfx        binary
+*.bin        binary
+*.dat        binary
+*.cvd        binary
+*.cld        binary
+*.yarc       binary
+*.pyc        binary
+*.docx       binary
+*.pdf        binary

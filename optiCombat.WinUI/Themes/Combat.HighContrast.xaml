@@ -1,0 +1,27 @@
+<ResourceDictionary
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+    <!-- Contraste renforcé (option « Contraste renforcé » ou contraste élevé Windows).
+         Fusionné en dernier dans le dictionnaire « Light » par WinUiThemeManager ; le thème clair
+         est forcé tant que l'option est active. Couleurs unies, contraste ≥ 7:1 sur blanc (WCAG AAA
+         pour le texte). Mêmes clés que Combat.Light / Combat.Dark. -->
+
+    <SolidColorBrush x:Key="AppBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="SidebarBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardAltBackgroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="CardBorderBrush" Color="#000000" />
+    <SolidColorBrush x:Key="TextMutedBrush" Color="#1A1A1A" />
+    <SolidColorBrush x:Key="OnAccentForegroundBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="TextOnAccentFillColorPrimaryBrush" Color="#FFFFFF" />
+    <SolidColorBrush x:Key="AccentBrush" Color="#00564C" />
+    <SolidColorBrush x:Key="AccentTintBrush" Color="#FFFF00" />
+    <SolidColorBrush x:Key="InfoBrush" Color="#1E3A8A" />
+    <SolidColorBrush x:Key="VioletBrush" Color="#5B21B6" />
+    <SolidColorBrush x:Key="WarningBrush" Color="#6B3F00" />
+    <SolidColorBrush x:Key="WarningTintBrush" Color="#FFF1B8" />
+    <SolidColorBrush x:Key="WarningBorderBrush" Color="#6B3F00" />
+    <SolidColorBrush x:Key="DangerBrush" Color="#8B0000" />
+
+</ResourceDictionary>

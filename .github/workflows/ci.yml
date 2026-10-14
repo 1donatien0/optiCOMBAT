@@ -1,0 +1,145 @@
+name: CI
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+    branches: [main, dev]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Couverture lignes : plancher bloquant / cible progressive (voir CONTRIBUTING.md)
+  COVERAGE_FLOOR: "0.40"
+  COVERAGE_TARGET: "0.50"
+
+jobs:
+  dotnet:
+    name: .NET tests + couverture
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - name: Thèmes WinUI (clés identiques, pas de StaticResource)
+        shell: pwsh
+        run: .\scripts\check-winui-theme-keys.ps1
+
+      - name: Runtime deps (ClamAV + YARA)
+        shell: pwsh
+        run: .\scripts\fetch-runtime-deps.ps1
+
+      - name: Build (Release, warnings = erreurs)
+        run: dotnet build optiCombat.sln -c Release
+
+      - name: dotnet test (Release + couverture)
+        run: >
+          dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release --no-build
+          --settings optiCombat.Tests\coverlet.runsettings
+          --collect:"XPlat Code Coverage"
+          --logger "trx;LogFileName=test-results.trx"
+          --results-directory TestResults
+
+      - name: Couverture — seuil
+        if: always()
+        shell: pwsh
+        run: |
+          $floor = [double]::Parse($env:COVERAGE_FLOOR, [Globalization.CultureInfo]::InvariantCulture)
+          $target = [double]::Parse($env:COVERAGE_TARGET, [Globalization.CultureInfo]::InvariantCulture)
+          $file = Get-ChildItem TestResults -Recurse -Filter coverage.cobertura.xml -ErrorAction SilentlyContinue | Select-Object -First 1
+          if (-not $file) { Write-Error 'coverage.cobertura.xml introuvable'; exit 1 }
+          [xml]$xml = Get-Content -LiteralPath $file.FullName
+          $line = [double]::Parse($xml.coverage.'line-rate', [Globalization.CultureInfo]::InvariantCulture)
+          $branch = [double]::Parse($xml.coverage.'branch-rate', [Globalization.CultureInfo]::InvariantCulture)
+          $summary = "Couverture lignes {0:P1} (plancher {1:P0}, cible {2:P0}) · branches {3:P1}" -f $line, $floor, $target, $branch
+          Write-Host $summary
+          "### $summary" | Out-File -Append -FilePath $env:GITHUB_STEP_SUMMARY -Encoding utf8
+          if ($line -lt $target) { Write-Host "::warning::Couverture sous la cible progressive." }
+          if ($line -lt $floor) { Write-Error 'Couverture sous le plancher.'; exit 1 }
+
+      - name: Artefacts tests
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-results
+          path: |
+            TestResults/**/*.trx
+            TestResults/**/coverage.cobertura.xml
+          retention-days: 14
+
+  rust:
+    name: Rust tests
+    runs-on: windows-latest
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo test
+        run: cargo test --workspace --manifest-path engine/Cargo.toml
+
+  rust-audit:
+    name: Rust audit (RustSec)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: cargo audit
+        run: |
+          cargo install cargo-audit --locked
+          cargo audit --file engine/Cargo.lock
+
+  publish:
+    name: Publish win-x64 + SBOM (main)
+    runs-on: windows-latest
+    needs: [dotnet, rust]
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 8.0.x
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+
+      - name: Dépendances Python (assets branding)
+        run: python -m pip install pillow
+
+      - name: Publish (sans tests ni installateur)
+        shell: pwsh
+        run: .\scripts\prepare-release.ps1 -SkipTests -SkipFreshclam -SkipInstaller
+
+      - name: SBOM CycloneDX
+        shell: pwsh
+        run: .\scripts\generate-sbom.ps1 -OutputDir sbom
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: optiCombat-win-x64-${{ github.sha }}
+          path: optiCombat.WinUI/bin/Release/net8.0-windows10.0.19041.0/publish/win-x64/
+          retention-days: 14
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: sbom-${{ github.sha }}
+          path: sbom/
+          retention-days: 30

@@ -1,0 +1,21 @@
+[package]
+name = "dispatcher"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+engine-core = { path = "../engine-core" }
+clamav = { path = "../clamav" }
+yara-engine = { path = "../yara-engine" }
+heuristics = { path = "../heuristics" }
+sandbox = { path = "../sandbox" }
+ml-classifier = { path = "../ml-classifier" }
+zip = { version = "8", default-features = false, features = ["deflate"] }
+reputation = { path = "../reputation" }
+correlator = { path = "../correlator" }
+
+[dev-dependencies]
+pe-analysis = { path = "../pe-analysis" }
+yara-engine = { path = "../yara-engine" }

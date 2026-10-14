@@ -1,0 +1,173 @@
+==============================================================================
+  optiCombat — Contrat de licence utilisateur final (CLUF / EULA)
+  v1.0 — 2026
+  Auteur : Dona By
+  Site   : https://sourceforge.net/u/donaby
+==============================================================================
+
+LISEZ ATTENTIVEMENT CE CONTRAT AVANT D'INSTALLER OU D'UTILISER OPTICOMBAT.
+En installant, copiant ou utilisant ce logiciel, vous acceptez sans réserve
+les termes du présent contrat. Si vous n'acceptez pas ces termes, n'installez
+pas le logiciel et supprimez toute copie en votre possession.
+
+------------------------------------------------------------------------------
+ARTICLE 1 — DÉFINITIONS
+------------------------------------------------------------------------------
+
+« Logiciel » désigne le programme optiCombat v1.0 (édition ClamAV ; build 1.0.0), ses
+composants, ressources, fichiers de configuration et toute mise à jour fournie
+par l'auteur au titre de la branche v1.x du produit.
+
+« Auteur » désigne Dona By, titulaire exclusif des droits
+sur le Logiciel.
+
+« Utilisateur » désigne toute personne physique ou morale qui installe ou
+utilise le Logiciel.
+
+------------------------------------------------------------------------------
+ARTICLE 2 — CONCESSION DE LICENCE
+------------------------------------------------------------------------------
+
+L'Auteur vous accorde une licence personnelle, non exclusive, non cessible et
+gratuite d'utiliser le Logiciel aux conditions suivantes :
+
+  a) Le Logiciel peut être installé et utilisé sur autant d'ordinateurs que
+     vous possédez ou administrez personnellement.
+
+  b) Vous pouvez effectuer des copies de sauvegarde du Logiciel à des fins
+     personnelles uniquement.
+
+  c) Vous pouvez redistribuer le Logiciel gratuitement à des tiers, sous
+     réserve de le faire dans sa forme originale et intégrale, sans
+     modification, et sans en tirer de profit direct ou indirect.
+
+------------------------------------------------------------------------------
+ARTICLE 3 — RESTRICTIONS
+------------------------------------------------------------------------------
+
+Sont expressément interdits :
+
+  a) Vendre, louer, sous-licencier ou commercialiser le Logiciel sous quelque
+     forme que ce soit.
+
+  b) Modifier, désassembler, décompiler ou tenter d'extraire le code source
+     du Logiciel, sauf dans les limites expressément autorisées par la loi.
+
+  c) Supprimer ou modifier les mentions de copyright, de marque ou de licence
+     figurant dans le Logiciel.
+
+  d) Utiliser le Logiciel à des fins illégales ou contraires aux lois en
+     vigueur dans votre pays.
+
+  e) Intégrer le Logiciel dans un produit commercial sans autorisation écrite
+     préalable de l'Auteur.
+
+------------------------------------------------------------------------------
+ARTICLE 4 — COMPOSANTS TIERS
+------------------------------------------------------------------------------
+
+Le Logiciel intègre des composants tiers distribués sous leurs propres
+licences, qui s'appliquent indépendamment du présent contrat :
+
+  • ClamAV® — Moteur antivirus open source
+    Licence : GNU General Public License v2 (GPL-2.0)
+    Copyright : Cisco Systems, Inc. et contributeurs
+    Site : https://www.clamav.net
+    Le code source de ClamAV est disponible sur https://github.com/Cisco-Talos/clamav
+
+  • YARA-Forge — Règles de détection comportementale
+    Licence : BSD / MIT selon les règles concernées
+    Dépôt : https://github.com/YARAHQ/yara-forge
+
+  • MaterialDesignInXamlToolkit
+    Licence : MIT License
+    Dépôt : https://github.com/MaterialDesignInXAML/MaterialDesignInXamlToolkit
+
+  • QuestPDF
+    Licence : MIT License (usage communauté)
+    Dépôt : https://github.com/QuestPDF/QuestPDF
+
+  Ces composants restent la propriété de leurs auteurs respectifs. Leur
+  utilisation au sein d'optiCombat ne vous transfère aucun droit sur ceux-ci.
+
+------------------------------------------------------------------------------
+ARTICLE 5 — MISES À JOUR DES SIGNATURES
+------------------------------------------------------------------------------
+
+Le Logiciel télécharge automatiquement des mises à jour de signatures depuis
+les serveurs officiels de ClamAV (database.clamav.net) et de YARA-Forge
+(GitHub). Ces téléchargements nécessitent une connexion Internet et sont
+effectués sans transmission d'informations personnelles identifiables.
+
+L'Auteur ne garantit pas la disponibilité permanente de ces serveurs tiers ni
+l'exhaustivité des signatures de menaces.
+
+------------------------------------------------------------------------------
+ARTICLE 6 — LIMITATION DE RESPONSABILITÉ
+------------------------------------------------------------------------------
+
+LE LOGICIEL EST FOURNI « EN L'ÉTAT », SANS GARANTIE D'AUCUNE SORTE,
+EXPRESSE OU IMPLICITE.
+
+En particulier, l'Auteur ne garantit pas :
+
+  a) Que le Logiciel détectera toutes les menaces ou virus présents sur votre
+     système (aucun logiciel de sécurité ne peut l'assurer).
+
+  b) Que le Logiciel ne génèrera aucun faux positif pouvant conduire à la
+     mise en quarantaine ou à la suppression de fichiers légitimes.
+
+  c) L'absence d'interruption ou d'erreur dans le fonctionnement du Logiciel.
+
+EN AUCUN CAS L'AUTEUR NE POURRA ÊTRE TENU RESPONSABLE DE TOUT DOMMAGE
+DIRECT, INDIRECT, ACCESSOIRE, SPÉCIAL OU CONSÉCUTIF, Y COMPRIS LA PERTE
+DE DONNÉES, RÉSULTANT DE L'UTILISATION OU DE L'IMPOSSIBILITÉ D'UTILISER
+LE LOGICIEL, MÊME S'IL A ÉTÉ INFORMÉ DE LA POSSIBILITÉ DE TELS DOMMAGES.
+
+Il appartient à l'Utilisateur de maintenir des sauvegardes régulières de
+ses données et de vérifier tout fichier avant suppression définitive.
+
+------------------------------------------------------------------------------
+ARTICLE 7 — DONNÉES ET VIE PRIVÉE
+------------------------------------------------------------------------------
+
+optiCombat ne collecte, ne transmet et ne vend aucune donnée personnelle.
+
+Le Logiciel accède aux fichiers de votre système uniquement dans le cadre
+de ses fonctions d'analyse et de nettoyage, à votre demande explicite.
+
+Les seules connexions réseau établies par le Logiciel sont :
+  • Téléchargement de mises à jour de signatures ClamAV
+  • Téléchargement de règles YARA depuis GitHub
+
+Aucune télémétrie, publicité ou compte utilisateur n'est requis.
+
+------------------------------------------------------------------------------
+ARTICLE 8 — RÉSILIATION
+------------------------------------------------------------------------------
+
+Cette licence est effective jusqu'à sa résiliation. Elle se résilie
+automatiquement si vous ne respectez pas l'un de ses termes. En cas de
+résiliation, vous devez désinstaller le Logiciel et détruire toute copie
+en votre possession.
+
+------------------------------------------------------------------------------
+ARTICLE 9 — DROIT APPLICABLE
+------------------------------------------------------------------------------
+
+Le présent contrat est régi par le droit français. Tout litige relatif à
+son interprétation ou à son exécution relèvera de la compétence exclusive
+des tribunaux français compétents.
+
+------------------------------------------------------------------------------
+ARTICLE 10 — CONTACT
+------------------------------------------------------------------------------
+
+Pour toute question relative à ce contrat ou au Logiciel :
+
+  Site     : https://sourceforge.net/u/donaby
+
+------------------------------------------------------------------------------
+  Copyright © 2026 Dona By. Tous droits réservés.
+  optiCombat v1.0 — logiciel gratuit — Vanier, Canada.
+------------------------------------------------------------------------------

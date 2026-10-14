@@ -1,0 +1,417 @@
+<UserControl
+    x:Class="optiCombat.WinUI.Views.OptionsPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:loc="using:optiCombat.WinUI.Services"
+    HorizontalAlignment="Stretch"
+    VerticalAlignment="Stretch">
+
+    <UserControl.Resources>
+        <!-- Carte d'option : libellé à gauche, contrôle à droite. -->
+        <Style x:Key="OptionRowStyle" TargetType="Grid">
+            <Setter Property="Background" Value="{ThemeResource CardBackgroundBrush}" />
+            <Setter Property="Padding" Value="16,12" />
+            <Setter Property="CornerRadius" Value="6" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="BorderBrush" Value="{ThemeResource CardBorderBrush}" />
+        </Style>
+        <Style x:Key="OptionCaptionStyle" TargetType="TextBlock" BasedOn="{StaticResource CaptionTextBlockStyle}">
+            <Setter Property="Foreground" Value="{ThemeResource TextMutedBrush}" />
+            <Setter Property="TextWrapping" Value="WrapWholeWords" />
+        </Style>
+        <Style x:Key="SectionHeaderStyle" TargetType="TextBlock" BasedOn="{StaticResource BodyStrongTextBlockStyle}">
+            <Setter Property="Margin" Value="4,14,0,4" />
+        </Style>
+        <!-- Interrupteur compact, sans texte On/Off : la carte porte le libellé. -->
+        <Style x:Key="OptionToggleStyle" TargetType="ToggleSwitch">
+            <Setter Property="OnContent" Value="" />
+            <Setter Property="OffContent" Value="" />
+            <Setter Property="MinWidth" Value="0" />
+            <Setter Property="VerticalAlignment" Value="Center" />
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Padding="24,14,24,10">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto" />
+            <RowDefinition Height="*" />
+        </Grid.RowDefinitions>
+
+        <Border Padding="16,12" Background="{ThemeResource CardBackgroundBrush}" BorderBrush="{ThemeResource CardBorderBrush}" BorderThickness="1" CornerRadius="8">
+            <StackPanel Spacing="4">
+                <TextBlock FontSize="24" FontWeight="SemiBold" loc:Loc.Text="Nav_Options" />
+                <TextBlock Foreground="{ThemeResource TextMutedBrush}" loc:Loc.Text="Opt_Subtitle" />
+            </StackPanel>
+        </Border>
+
+        <ScrollViewer Grid.Row="1" Margin="0,6,0,0">
+            <StackPanel MaxWidth="920" Spacing="8">
+
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" loc:Loc.Text="Opt_General" />
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_Language" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_LanguageCaption" />
+                    </StackPanel>
+                    <ComboBox x:Name="LanguageCombo" Grid.Column="1" Width="180" VerticalAlignment="Center" SelectionChanged="Language_SelectionChanged">
+                        <ComboBoxItem Content="Français (fr-FR)" Tag="fr-FR" />
+                        <ComboBoxItem Content="English (en-US)" Tag="en-US" />
+                    </ComboBox>
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_FavoriteScan" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_FavoriteScanCaption" />
+                    </StackPanel>
+                    <ComboBox x:Name="FavoriteScanCombo" Grid.Column="1" Width="180" VerticalAlignment="Center" SelectionChanged="FavoriteScan_SelectionChanged">
+                        <ComboBoxItem loc:Loc.Content="ScanType_Quick" />
+                        <ComboBoxItem loc:Loc.Content="ScanType_Full" />
+                        <ComboBoxItem loc:Loc.Content="ScanType_Folder" />
+                        <ComboBoxItem loc:Loc.Content="ScanType_File" />
+                    </ComboBox>
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_ActionNotifications" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_ActionNotificationsCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglNotifications" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="Notifications_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_StartWithWindows" />
+                    <ToggleSwitch x:Name="TglAutoStart" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="AutoStart_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_DarkTheme" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_DarkThemeCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglDarkTheme" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="DarkTheme_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_SyncWindowsTheme" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_SyncWindowsThemeCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglSyncTheme" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="SyncTheme_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_HighContrast" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" loc:Loc.Text="Opt_HighContrastCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglHighContrast" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="HighContrast_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_GameMode" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_GameModeCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglGameMode" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="GameMode_Toggled" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" loc:Loc.Text="Opt_ProtectionSection" />
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_DefenderComplement" />
+                        <TextBlock x:Name="DefenderComplementCaption" Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglDefenderComplement" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="DefenderComplement_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_Rtp" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_RtpCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglRtp" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="Rtp_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_AutoQuarantine" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_AutoQuarantineCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglAutoQuarantine" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="AutoQuarantine_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_BackupBeforeQuarantine" />
+                    <ToggleSwitch x:Name="TglBackupQuarantine" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="BackupQuarantine_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_AutoUpdateSignatures" />
+                    <ToggleSwitch x:Name="TglAutoUpdate" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="AutoUpdate_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_AggressiveUpdates" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_AggressiveUpdatesCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglAggressiveSig" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="AggressiveSig_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_ProcessMonitor" />
+                    <ToggleSwitch x:Name="TglProcessMonitor" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="ProcessMonitor_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_TamperProtection" />
+                    <ToggleSwitch x:Name="TglTamper" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="Tamper_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_RemovableScan" />
+                    <ToggleSwitch x:Name="TglRemovableDrive" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="RemovableDrive_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_RemovableDetailed" />
+                    <ToggleSwitch x:Name="TglRemovableDetailed" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="RemovableDetailed_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_RemovableInFullScan" />
+                    <ToggleSwitch x:Name="TglRemovableFullScan" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="RemovableFullScan_Toggled" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_UseClamd" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_UseClamdCaption" />
+                    </StackPanel>
+                    <ToggleSwitch x:Name="TglClamd" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="Clamd_Toggled" />
+                </Grid>
+
+                <!-- Carte composite : planification -->
+                <Grid Style="{StaticResource OptionRowStyle}">
+                    <StackPanel Spacing="10">
+                        <Grid ColumnSpacing="16">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" loc:Loc.Text="Opt_ScheduledDaily" />
+                            <ToggleSwitch x:Name="TglScheduledScan" Grid.Column="1" Style="{StaticResource OptionToggleStyle}" Toggled="ScheduledScan_Toggled" />
+                        </Grid>
+                        <Grid ColumnSpacing="12">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="120" />
+                                <ColumnDefinition Width="120" />
+                            </Grid.ColumnDefinitions>
+                            <TextBlock VerticalAlignment="Center" Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_ScheduledTime" />
+                            <NumberBox x:Name="ScheduleHourBox" Grid.Column="1" Minimum="0" Maximum="23" SpinButtonPlacementMode="Compact" />
+                            <NumberBox x:Name="ScheduleMinuteBox" Grid.Column="2" Minimum="0" Maximum="59" SpinButtonPlacementMode="Compact" />
+                        </Grid>
+                        <TextBlock x:Name="ScheduledStatusText" Style="{StaticResource OptionCaptionStyle}" />
+                        <Button Click="RunScheduleNow_Click" loc:Loc.Content="Opt_RunNow" />
+                    </StackPanel>
+                </Grid>
+
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" loc:Loc.Text="Opt_ExclusionsSection" />
+
+                <!-- Carte composite : exclusions -->
+                <Grid Style="{StaticResource OptionRowStyle}">
+                    <StackPanel Spacing="10">
+                        <TextBlock loc:Loc.Text="Opt_ExcludedFolders" />
+                        <Grid ColumnSpacing="8">
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="*" />
+                                <ColumnDefinition Width="Auto" />
+                                <ColumnDefinition Width="Auto" />
+                            </Grid.ColumnDefinitions>
+                            <TextBox x:Name="ExclusionInput" loc:Loc.Placeholder="Opt_ExclusionPlaceholder" />
+                            <Button Grid.Column="1" Click="BrowseExclusion_Click" loc:Loc.Content="Opt_Browse" />
+                            <Button Grid.Column="2" Click="AddExclusion_Click" loc:Loc.Content="Opt_Add" />
+                        </Grid>
+                        <ListView x:Name="ExclusionsList" MaxHeight="180">
+                            <ListView.ItemTemplate>
+                                <DataTemplate>
+                                    <Grid ColumnSpacing="12">
+                                        <Grid.ColumnDefinitions>
+                                            <ColumnDefinition Width="*" />
+                                            <ColumnDefinition Width="Auto" />
+                                        </Grid.ColumnDefinitions>
+                                        <TextBlock Text="{Binding}" TextTrimming="CharacterEllipsis" VerticalAlignment="Center" />
+                                        <Button Grid.Column="1" Click="RemoveExclusion_Click" Tag="{Binding}" loc:Loc.Content="Opt_RemoveExclusion" />
+                                    </Grid>
+                                </DataTemplate>
+                            </ListView.ItemTemplate>
+                        </ListView>
+                    </StackPanel>
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="140" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_CleanThreshold" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_CleanThresholdCaption" />
+                    </StackPanel>
+                    <NumberBox x:Name="CleanThresholdBox" Grid.Column="1" Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" ValueChanged="Thresholds_Changed" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="140" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_SignatureStale" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_SignatureStaleCaption" />
+                    </StackPanel>
+                    <NumberBox x:Name="SignatureStaleBox" Grid.Column="1" Minimum="1" Maximum="90" SpinButtonPlacementMode="Compact" VerticalAlignment="Center" ValueChanged="Thresholds_Changed" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="260" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_VirusTotalKey" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" loc:Loc.Text="Opt_VirusTotalCaption" />
+                    </StackPanel>
+                    <PasswordBox x:Name="VirusTotalBox" Grid.Column="1" VerticalAlignment="Center" PasswordChanged="VirusTotal_Changed" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_DefenderExclusions" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" loc:Loc.Text="Opt_DefenderExclusionsCaption" />
+                        <TextBlock x:Name="DefenderExclusionStatusText" Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <Button x:Name="DefenderExclusionButton" Grid.Column="1" VerticalAlignment="Center" Click="DefenderExclusions_Click" loc:Loc.Content="Opt_DefenderExclusionsButton" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" loc:Loc.Text="Opt_AppUpdateSection" />
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock x:Name="AppVersionText" />
+                        <TextBlock x:Name="UpdateStatusText" Style="{StaticResource OptionCaptionStyle}" />
+                    </StackPanel>
+                    <Button Grid.Column="1" VerticalAlignment="Center" Click="CheckUpdates_Click" loc:Loc.Content="Opt_CheckUpdates" />
+                </Grid>
+
+                <TextBlock Style="{StaticResource SectionHeaderStyle}" loc:Loc.Text="Opt_DiagnosticsTitle" />
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="Auto" />
+                    </Grid.ColumnDefinitions>
+                    <TextBlock VerticalAlignment="Center" Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" loc:Loc.Text="Opt_LogsHint" />
+                    <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
+                        <Button HorizontalAlignment="Stretch" Click="OpenLogsFolder_Click" loc:Loc.Content="Opt_OpenLogsFolder" />
+                        <Button HorizontalAlignment="Stretch" Click="License_Click" loc:Loc.Content="Opt_License" />
+                    </StackPanel>
+                </Grid>
+
+            </StackPanel>
+        </ScrollViewer>
+    </Grid>
+</UserControl>

@@ -1,0 +1,9 @@
+[package]
+name = "pe-analysis"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+
+[dependencies]
+goblin = { version = "0.10", default-features = false, features = ["std", "pe32", "pe64"] }
