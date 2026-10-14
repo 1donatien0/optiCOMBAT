@@ -92,3 +92,4 @@ dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
 © 2026 **Donatien Byakombe** — **Donaby Design**
 
 ClamAV (GPLv2), YARA, Inno Setup — voir [§10 du guide complet](docs/GUIDE_COMPLET.md#10-dépendances-et-licences).
+test yolo
