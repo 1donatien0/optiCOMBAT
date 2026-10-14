@@ -2,7 +2,7 @@
 
 Antivirus Windows open source — shell **WinUI 3** (.NET 8), moteurs **ClamAV** + **YARA**, cœur natif **Rust** (`opticombat.dll`), design **Donaby Combat Aqua**.
 
-> **Branche active** : `dev` — WinUI 3 est le shell unique. 
+> **Branche active** : `win` — WinUI 3 est le shell unique. 
 
 [![CI](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml/badge.svg)](https://github.com/1donatien0/optiCOMBAT/actions/workflows/ci.yml) [![CodeQL](https://github.com/1donatien0/optiCOMBAT/actions/workflows/codeql.yml/badge.svg)](https://github.com/1donatien0/optiCOMBAT/actions/workflows/codeql.yml)
 
