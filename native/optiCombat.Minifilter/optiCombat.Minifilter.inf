@@ -1,0 +1,30 @@
+; optiCombat Minifilter INF stub (v8)
+; Compilation complète requiert WDK + certificat EV
+
+[Version]
+Signature="$Windows NT$"
+Class=ActivityMonitor
+ClassGuid={b86dff51-a31e-4bac-b3cf-e8cfe75c9fc2}
+Provider=%Manufacturer%
+DriverVer=06/15/2026,1.0.0.0
+CatalogFile=optiCombat.Minifilter.cat
+PnpLockdown=1
+
+[DestinationDirs]
+DefaultDestDir = 12
+
+[Manufacturer]
+%Manufacturer%=Standard,NTamd64
+
+[Standard.NTamd64]
+%DeviceName%=optiCombat_Minifilter, optiCombatMinifilter
+
+[optiCombat_Minifilter.NT]
+CopyFiles = optiCombat_Minifilter_Copy
+
+[optiCombat_Minifilter_Copy]
+optiCombat.Minifilter.sys
+
+[Strings]
+Manufacturer="optiCombat"
+DeviceName="optiCombat File System Minifilter v8"

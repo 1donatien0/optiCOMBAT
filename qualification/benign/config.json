@@ -1,0 +1,6 @@
+{
+  "app": "optiCombat",
+  "version": "1.0.0",
+  "telemetry": false,
+  "updateChannel": "stable"
+}
