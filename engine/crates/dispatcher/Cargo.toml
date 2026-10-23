@@ -15,6 +15,7 @@ ml-classifier = { path = "../ml-classifier" }
 zip = { version = "9", default-features = false, features = ["deflate"] }
 reputation = { path = "../reputation" }
 correlator = { path = "../correlator" }
+ioc-engine = { path = "../ioc-engine" }
 
 [dev-dependencies]
 pe-analysis = { path = "../pe-analysis" }

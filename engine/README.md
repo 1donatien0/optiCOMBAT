@@ -2,6 +2,19 @@
 
 Cœur de détection antivirus en Rust, exposé via une frontière FFI stable. Workspace Cargo modulaire : chaque moteur renvoie un **résultat normalisé** (`EngineResult`) consommé par un corrélateur central.
 
+### Pipeline de détection
+
+```text
+Fichier → SHA-256 → base de hachage (reputation / MalwareBazaar)
+        → extraction / archives → ClamAV
+        → règles YARA locales
+        → heuristique PE / classifieur ML
+        → IOC URL/domaine/IP  (ioc-engine : URLhaus + ThreatFox)
+        → verdict + score de confiance
+```
+
+Tous les feeds (signatures ClamAV, règles YARA, CSV MalwareBazaar, URLhaus, ThreatFox) sont téléchargés hors-ligne par la couche C# (`CloudThreatIntelService`). Le cœur Rust est **entièrement hors-ligne** et ne fait aucun appel réseau.
+
 ## Crates
 
 | Crate | Rôle |
@@ -15,7 +28,8 @@ Cœur de détection antivirus en Rust, exposé via une frontière FFI stable. Wo
 | `sandbox` | Indicateurs comportementaux et séquences d’attaque. |
 | `ml-classifier` | Features PE → softmax → familles. |
 | `correlator` | Fusion des résultats et seuils configurables. |
-| `reputation` | Whitelist / blacklist / source cloud par hash. |
+| `reputation` | Whitelist / blacklist / source cloud par hash + `MalwareBazaarDb` (CSV ou liste de hashes). |
+| `ioc-engine` | Vérification d'IOC réseau hors-ligne : URLs, domaines, IPv4 (URLhaus + ThreatFox) ; extraction depuis scripts et fichiers texte. |
 | `quarantine` | AES-256-GCM + SHA-256, restauration vérifiée. |
 | `updater` | Manifestes signés ed25519. |
 | `memory-scanner` | Shellcode + YARA sur buffer. |

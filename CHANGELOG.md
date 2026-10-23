@@ -6,6 +6,15 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
+- **Threat Intel hors-ligne — couche 3 du pipeline de détection** (MalwareBazaar, URLhaus, ThreatFox) :
+  - Nouvelle crate `ioc-engine` : types `IocKind` (Url/Domain/Ip), trait `IocFeed`, moteur `IocEngine::check_all()`
+  - `ioc-engine::urlhaus` : chargement des feeds URLhaus (format texte une URL/ligne et CSV officiel, colonne 2)
+  - `ioc-engine::threatfox` : chargement du CSV ThreatFox (formats court 3 colonnes et long 15 colonnes, colonnes réelles de l'export 2026-10) ; gestion des IOC `ip:port`
+  - `ioc-engine::extractor` : extraction d'URLs, domaines et IPv4 publiques (filtre RFC-1918 + loopback) depuis le contenu textuel ; heuristique binaire (null-byte > 5 %) ; plafonds MAX_URLS = 512, MAX_IPS = 256
+  - Crate `reputation` étendue : `MalwareBazaarDb` chargeable depuis le CSV officiel (sha256 colonne 1, famille colonne 8) ou une liste simple (un hash/ligne) ; implémente `ReputationSource`
+  - `dispatcher` : nouvelle étape 6 (IOC réseau) activée pour `FileKind::Script | Unknown` si un feed est chargé ; verdict `Malicious` si confiance ≥ 75 %, sinon `Suspicious`
+  - `dispatcher` : constructeur `with_ioc(reputation, ioc)` ; `with_reputation()` initialise `ioc: IocEngine::empty()`
+  - Tous les feeds sont téléchargés hors-ligne par la couche C# ; le cœur Rust ne fait aucun appel réseau
 - Tests de couverture : Historique (`HistoryViewModel`), export HTML, nettoyage (analyse, pas d’exécution destructive), signatures / `UpdateService`, posture, modèles (`ByteSizeFormat`, `ScanProgress`, `ClamdConfSupport`, `ThreatInfo`, …)
 - Tests des ViewModels du shell (Antivirus, Options, Nettoyage, Mises à jour, Tweaks) via `TestSupport/IsolatedServices` : conteneur complet dans un dossier temporaire, moteurs ClamAV / YARA, winget et API GitHub factices
 - Tests : pipeline `ScanOrchestrator` (YARA, listes de fichiers, exclusions), `RiskScoringService`, restauration de quarantaine, rapports PDF, routage des toasts, flux complet YARA-Forge (intégrité SHA-256), analyse de la sortie winget

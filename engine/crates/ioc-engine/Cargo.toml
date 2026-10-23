@@ -1,0 +1,10 @@
+[package]
+name = "ioc-engine"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Vérification d'IOC réseau hors-ligne (URLhaus, ThreatFox)."
+
+[dependencies]
+engine-core = { path = "../engine-core" }
