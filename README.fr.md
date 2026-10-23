@@ -83,14 +83,20 @@ Une mise à jour remplace l’application dans le même dossier. L’historique,
 ## Comment ça marche
 
 ```
-optiCombat.exe            interface WinUI 3 (.NET 8)
-    ├── ClamAV            clamd, ou clamscan en repli
-    ├── YARA              règles, dont YARA-Forge
-    └── opticombat.dll    cœur Rust optionnel, désactivé par défaut
+optiCombat.exe              interface WinUI 3 (.NET 8)
+    ├── ClamAV              clamd, ou clamscan en repli
+    ├── YARA                règles, dont YARA-Forge
+    └── opticombat.dll      cœur Rust optionnel, désactivé par défaut
+          ├── reputation    listes de hashes ; MalwareBazaarDb si l'appelant charge un CSV
+          ├── yara-engine   règles YARA locales
+          ├── heuristics    PE, ML
+          └── ioc-engine    URLhaus + ThreatFox, vide tant qu'aucun feed n'est chargé
 
-Couche plateforme         service Windows, AMSI, minifiltre
-                          livrée avec le produit, inactive
+Couche plateforme           service Windows, AMSI, minifiltre
+                            livrée avec le produit, inactive
 ```
+
+Le shell ne télécharge ni MalwareBazaar, ni URLhaus, ni ThreatFox. Le cœur Rust ne fait aucun appel réseau. `Dispatcher::new` laisse le moteur IOC vide.
 
 Le guide technique couvre l’architecture, le modèle de sécurité, la compilation et la publication : **[docs/GUIDE_COMPLET.md](docs/GUIDE_COMPLET.md)**.
 
@@ -131,7 +137,7 @@ Publication complète (tests, publish, `opticombat.dll`, installateur) :
 
 Tests unitaires Release (xUnit) : **618 / 618** verts, ViewModels du shell inclus. Couverture de lignes **66,4 %** — plancher CI **62 %**, cible **65 %**.
 
-Rust : **62** cas (`cargo test --workspace --manifest-path engine/Cargo.toml`), couverture de lignes d’au moins **65 %** (`cargo llvm-cov`, cible 75 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
+Rust : **111** fonctions `#[test]` dans le workspace (`cargo test --workspace --manifest-path engine/Cargo.toml`), dont `ioc-engine`, `urlhaus`, `threatfox`, `extractor`, `bazaar_tests` et les tests IOC du dispatcher. Couverture de lignes d’au moins **65 %** (`cargo llvm-cov`, cible 75 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
 
 La CI lance les tests C# et Rust, CodeQL, Gitleaks, Dependency Review et Dependabot.
 

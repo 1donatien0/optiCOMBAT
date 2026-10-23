@@ -13,7 +13,7 @@ Fichier → SHA-256 → base de hachage (reputation / MalwareBazaar)
         → verdict + score de confiance
 ```
 
-Tous les feeds (signatures ClamAV, règles YARA, CSV MalwareBazaar, URLhaus, ThreatFox) sont téléchargés hors-ligne par la couche C# (`CloudThreatIntelService`). Le cœur Rust est **entièrement hors-ligne** et ne fait aucun appel réseau.
+Les signatures ClamAV et les règles YARA sont mises à jour par le shell (`FreshclamUpdater`, `YaraForgeUpdater`). Les CSV MalwareBazaar, URLhaus et ThreatFox ne sont pas téléchargés par l'application : l'appelant les charge en mémoire. Sans ce chargement, `Dispatcher::new` laisse le moteur IOC vide. Le cœur Rust ne fait aucun appel réseau. L'étape IOC ne concerne que les scripts et les fichiers de type inconnu.
 
 ## Crates
 
