@@ -22,6 +22,7 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ### Changed
 
+- **Installateur léger, 26 Mo** (`optiCombat_Setup_v1.0.0.exe`) : publication framework-dependent, moteurs ClamAV et YARA inclus, bases CVD et règles YARA-Forge téléchargées après l’installation. Le dossier `publish\` reste volumineux ; ce n’est pas le fichier à distribuer.
 - **Bibliothèque native renommée `opticombat_engine.dll`** (`libopticombat_engine.so`) : `opticombat.dll` entrait en collision avec `optiCombat.dll` sur NTFS (insensible à la casse) dans le dossier de publication.
 - Planchers de couverture CI : **.NET 85 %** (cible 90 %), **Rust 90 %** (cible 95 %). Mesures : .NET **87,1 %** des lignes et **80,5 %** des branches sous Linux (16 tests réservés à Windows non exécutés), **89,8 %** des lignes (10 724 / 11 939) et **84,3 %** des branches sous Windows (943 tests verts ; plancher 85 % tenu, cible 90 % non) ; Rust **92,6 %**.
 - **Copies de sécurité neutralisées** : l'option « Copie de sécurité avant quarantaine » écrit désormais `<nom>.ocsafe`, contenu masqué (XOR 0x5A, `ThreatRemediationService.DecodeSafetyCopy` pour le récupérer), au lieu d'une copie exécutable en clair.

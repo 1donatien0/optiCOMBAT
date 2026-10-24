@@ -70,15 +70,15 @@ Une mise à jour remplace l’application dans le même dossier. L’historique,
 | Programme | `optiCombat.exe` |
 | Données d’analyse, historique, quarantaine | `%LocalAppData%\optiCombat` |
 | Préférences | `%AppData%\optiCombat` |
-| Installateur | `optiCombat_Setup_v1.0.0.exe` (autonome, mise à jour sur place) |
+| Installateur | `optiCombat_Setup_v1.0.0.exe` (26 Mo, mise à jour sur place) |
 
 ## Installation
 
 1. Lancez **`optiCombat_Setup_v1.0.0.exe`**. Compilez-le avec le script de publication ci-dessous, ou utilisez un binaire publié lorsqu’une release en joint un.
-2. Choisissez le français ou l’anglais, puis terminez l’installation. L’installateur demande les droits administrateur. Le runtime .NET est inclus.
+2. Choisissez le français ou l’anglais, puis terminez l’installation. L’installateur demande les droits administrateur. Il fait **26 Mo** : les moteurs ClamAV et YARA sont dedans, pas les bases de signatures.
 3. Ouvrez optiCOMBAT et laissez-le télécharger les signatures ClamAV et les règles YARA. Laissez Windows Defender actif.
 
-**Prérequis :** Windows 10 ou Windows 11, 64 bits.
+**Prérequis :** Windows 10 ou Windows 11, 64 bits, et le runtime **.NET 8 Desktop**.
 
 ## Comment ça marche
 

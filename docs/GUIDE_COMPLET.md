@@ -516,12 +516,12 @@ Si la protection contre la falsification est active, ajouter les chemins dans *S
 .\scripts\prepare-release.ps1 -Sign                # avec signature (voir SIGNING.md)
 ```
 
-Étapes : nettoyage → `fetch-runtime-deps` (+ freshclam) → assets branding (`generate-brand-assets.py` → `assets/` et `installer/optiCombat.ico`) → tests Release → `dotnet publish` WinUI (profil `FolderProfile-SelfContained`) + service → moteur Rust → `verify-runtime-deps` → signature (option) → installateur Inno.
+Étapes : nettoyage → `fetch-runtime-deps` (+ freshclam) → assets branding (`generate-brand-assets.py` → `assets/` et `installer/optiCombat.ico`) → tests Release → `dotnet publish` WinUI (profil `FolderProfile`, framework-dependent) + service → moteur Rust → `verify-runtime-deps` → signature (option) → installateur Inno.
 
 Les scripts de poste de dev non versionnés (`unblock-dev-build`, `sign-dev-local`, `sync-installer-icon`) ne sont appelés que s’ils existent.
 
-- Sortie publish : `optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\` (**self-contained**, runtime .NET embarqué).
-- Installateur : `installer\output\optiCombat_Setup_v1.0.0.exe` — x64, bilingue FR/EN.
+- Sortie publish : `optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\` (**framework-dependent** : le dossier est volumineux, le runtime .NET n’est pas embarqué).
+- Installateur : `installer\output\optiCombat_Setup_v1.0.0.exe` — **26 Mo**, x64, bilingue FR/EN. Les bases CVD et le paquet YARA-Forge n’y sont pas : freshclam et la mise à jour des règles les téléchargent après l’installation. `clambc.exe` et les autres outils de développement ClamAV sont exclus.
 - Chaîne alternative : `.\installer\build-release-setup.ps1`.
 
 ### Comportement de l’installateur
@@ -586,7 +586,7 @@ Non traduit volontairement : sorties brutes ClamAV / freshclam / YARA, noms de m
 | Composant | Version | Licence | Usage |
 |---|---|---|---|
 | Windows App SDK (WinUI 3) | 1.8 | MIT | Shell UI |
-| .NET | 8.x | MIT | Runtime (embarqué, self-contained) |
+| .NET | 8.x | MIT | Runtime Desktop, requis sur le poste (installateur framework-dependent) |
 | QuestPDF | 2024.12.2 | Community (gratuite open source) | Rapports PDF |
 | Microsoft.Toolkit.Uwp.Notifications | 7.1.3 | MIT | Toasts |
 | Microsoft.Extensions.DependencyInjection / Hosting.WindowsServices | 8.0.1 | MIT | DI, service Windows |

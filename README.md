@@ -70,15 +70,15 @@ An upgrade replaces the app in the same folder. Scan history, quarantine, and pr
 | Program | `optiCombat.exe` |
 | Scan data, history, quarantine | `%LocalAppData%\optiCombat` |
 | Preferences | `%AppData%\optiCombat` |
-| Installer | `optiCombat_Setup_v1.0.0.exe` (self-contained, in-place update) |
+| Installer | `optiCombat_Setup_v1.0.0.exe` (26 MB, in-place update) |
 
 ## Install
 
 1. Run **`optiCombat_Setup_v1.0.0.exe`**. Build it with the release script below, or use a published binary when one is attached to a release.
-2. Choose English or French, then finish the installer. It needs administrator rights. The .NET runtime is included.
+2. Choose English or French, then finish the installer. It needs administrator rights. The setup is **26 MB**: ClamAV and YARA engines are included, signature databases are not.
 3. Open optiCOMBAT and let it download the ClamAV signatures and YARA rules. Leave Windows Defender enabled.
 
-**Requirements:** Windows 10 or Windows 11, 64-bit.
+**Requirements:** Windows 10 or Windows 11, 64-bit, and the **.NET 8 Desktop** runtime.
 
 ## How it works
 

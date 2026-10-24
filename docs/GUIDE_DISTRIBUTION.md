@@ -39,7 +39,7 @@ Un second antivirus temps réel peut bloquer ou terminer `optiCombat.exe`.
 
 ## 4. Runtime .NET
 
-En **self-contained** (défaut), aucun runtime à installer. En **framework-dependent**, l’installateur vérifie .NET 8 Desktop x64 (`IsDotNet8Installed`).
+Le défaut est **framework-dependent**. L’installateur vérifie .NET 8 Desktop x64 (`IsDotNet8Installed`) et fait **26 Mo** : moteurs ClamAV et YARA inclus, bases CVD et règles YARA-Forge téléchargées après l’installation. `-SelfContained` embarque le runtime .NET et grossit fortement le setup.
 
 ---
 
