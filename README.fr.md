@@ -137,7 +137,7 @@ Publication complète (tests, publish, `opticombat.dll`, installateur) :
 
 Tests unitaires Release (xUnit) : **618 / 618** verts, ViewModels du shell inclus. Couverture de lignes **66,4 %** — plancher CI **62 %**, cible **65 %**.
 
-Rust : **111** fonctions `#[test]` dans le workspace (`cargo test --workspace --manifest-path engine/Cargo.toml`), dont `ioc-engine`, `urlhaus`, `threatfox`, `extractor`, `bazaar_tests` et les tests IOC du dispatcher. Couverture de lignes d’au moins **65 %** (`cargo llvm-cov`, cible 75 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
+Rust : **108** fonctions `#[test]` exécutées par `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Trois tests Windows restent derrière la feature `windows-platform`. Couverture de lignes d’au moins **65 %** (`cargo llvm-cov`, cible 75 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
 
 La CI lance les tests C# et Rust, CodeQL, Gitleaks, Dependency Review et Dependabot.
 

@@ -137,7 +137,7 @@ Full release (tests, publish, `opticombat.dll`, installer):
 
 Release unit tests (xUnit): **618 / 618** passing, including the shell view models. Line coverage **66.4%** — CI floor **62%**, target **65%**.
 
-Rust: **111** `#[test]` functions in the workspace (`cargo test --workspace --manifest-path engine/Cargo.toml`), including `ioc-engine`, `urlhaus`, `threatfox`, `extractor`, `bazaar_tests`, and the dispatcher IOC tests. Line coverage at least **65%** (`cargo llvm-cov`, target 75%), plus `cargo clippy -D warnings` and `cargo fmt --check`.
+Rust: **108** `#[test]` functions run by `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Three Windows tests stay behind the `windows-platform` feature. Line coverage at least **65%** (`cargo llvm-cov`, target 75%), plus `cargo clippy -D warnings` and `cargo fmt --check`.
 
 CI runs the C# and Rust tests, CodeQL, Gitleaks, Dependency Review, and Dependabot.
 

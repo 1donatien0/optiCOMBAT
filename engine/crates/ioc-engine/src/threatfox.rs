@@ -17,7 +17,7 @@
 //! Le fichier est téléchargé par la couche C# et stocké dans
 //! `%LocalAppData%\optiCombat\threat_intel\threatfox.csv`.
 
-use crate::{extract_host, IocFeed, IocKind, IocMatch, IocSource};
+use crate::{IocFeed, IocKind, IocMatch, IocSource};
 use std::collections::HashMap;
 
 /// Entrée interne ThreatFox (ce qu'on garde en mémoire par IOC).
@@ -52,8 +52,10 @@ impl ThreatFoxFeed {
                 continue;
             }
             // Ignore la ligne d'en-tête (nouveau format : first_seen_utc ; ancien : ioc_id).
-            if line.starts_with("first_seen_utc") || line.starts_with("\"first_seen_utc\"")
-                || line.starts_with("\"ioc_id\"") || line.starts_with("ioc_id")
+            if line.starts_with("first_seen_utc")
+                || line.starts_with("\"first_seen_utc\"")
+                || line.starts_with("\"ioc_id\"")
+                || line.starts_with("ioc_id")
             {
                 continue;
             }
@@ -82,13 +84,15 @@ impl Default for ThreatFoxFeed {
 
 impl IocFeed for ThreatFoxFeed {
     fn check_url(&self, url: &str) -> Option<IocMatch> {
-        self.lookup(url).filter(|e| e.ioc_type.contains("url")).map(|e| IocMatch {
-            ioc: url.to_string(),
-            kind: IocKind::Url,
-            source: IocSource::Threatfox,
-            threat: Some(e.malware.clone()),
-            confidence: e.confidence,
-        })
+        self.lookup(url)
+            .filter(|e| e.ioc_type.contains("url"))
+            .map(|e| IocMatch {
+                ioc: url.to_string(),
+                kind: IocKind::Url,
+                source: IocSource::Threatfox,
+                threat: Some(e.malware.clone()),
+                confidence: e.confidence,
+            })
     }
 
     fn check_domain(&self, domain: &str) -> Option<IocMatch> {
@@ -163,11 +167,7 @@ fn parse_line(line: &str) -> Option<(String, TfEntry)> {
         return None;
     }
 
-    let confidence = confidence_raw
-        .trim()
-        .parse::<u8>()
-        .unwrap_or(50)
-        .min(100);
+    let confidence = confidence_raw.trim().parse::<u8>().unwrap_or(50).min(100);
 
     Some((
         ioc,

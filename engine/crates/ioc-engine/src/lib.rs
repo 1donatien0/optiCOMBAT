@@ -205,8 +205,8 @@ pub fn extract_host(url: &str) -> Option<String> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use urlhaus::UrlhausFeed;
     use threatfox::ThreatFoxFeed;
+    use urlhaus::UrlhausFeed;
 
     #[test]
     fn extract_host_cas_normaux() {
@@ -260,7 +260,10 @@ mod tests {
         urlhaus.load_text("https://drop.evil/pay.exe\n");
         let eng = IocEngine::new(vec![Box::new(urlhaus)]);
         let indicators = Indicators {
-            urls: vec!["https://drop.evil/pay.exe".into(), "https://clean.site/ok".into()],
+            urls: vec![
+                "https://drop.evil/pay.exe".into(),
+                "https://clean.site/ok".into(),
+            ],
             domains: vec![],
             ips: vec![],
         };

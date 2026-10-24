@@ -214,7 +214,8 @@ ftp://drop.malware.cc/agent.bin
 
     #[test]
     fn charge_depuis_csv() {
-        let csv = "1,2026-01-01 00:00:00 UTC,https://csv.evil/drop.exe,online,,malware_download,,\n";
+        let csv =
+            "1,2026-01-01 00:00:00 UTC,https://csv.evil/drop.exe,online,,malware_download,,\n";
         let mut feed = UrlhausFeed::new();
         let n = feed.load_csv(csv);
         assert_eq!(n, 1);

@@ -354,7 +354,9 @@ impl MalwareBazaarDb {
         for line in text.lines() {
             let hash = line.trim().to_ascii_lowercase();
             if hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit()) {
-                self.hashes.entry(hash).or_insert_with(|| default_name.to_string());
+                self.hashes
+                    .entry(hash)
+                    .or_insert_with(|| default_name.to_string());
                 count += 1;
             }
         }

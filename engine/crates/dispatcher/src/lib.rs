@@ -22,9 +22,9 @@ use engine_core::{
     Detection, Engine, EngineResult, FileKind, ScanContext, Severity, SignatureEngine, Verdict,
 };
 use heuristics::HeuristicEngine;
-use ml_classifier::Classifier;
 use ioc_engine::extractor::{extract_from_text, is_likely_text};
 use ioc_engine::{IocEngine, IocSource};
+use ml_classifier::Classifier;
 use reputation::{Reputation, ReputationEngine};
 use sandbox::Sandbox;
 use yara_engine::YaraEngine;
@@ -197,14 +197,15 @@ impl Dispatcher {
         //    Couche 3 du pipeline défini dans le document de recherche optiCOMBAT :
         //    URLhaus (distribution de malwares) + ThreatFox (IOC communautaires).
         //    Activé uniquement si au moins un feed est chargé (is_empty = false).
-        if !self.ioc.is_empty() && matches!(kind, FileKind::Script | FileKind::Unknown) {
-            if is_likely_text(data) {
-                if let Ok(text) = std::str::from_utf8(data) {
-                    let indicators = extract_from_text(text);
-                    let hits = self.ioc.check_all(&indicators);
-                    if !hits.is_empty() {
-                        results.push(ioc_engine_result(&hits));
-                    }
+        if !self.ioc.is_empty()
+            && matches!(kind, FileKind::Script | FileKind::Unknown)
+            && is_likely_text(data)
+        {
+            if let Ok(text) = std::str::from_utf8(data) {
+                let indicators = extract_from_text(text);
+                let hits = self.ioc.check_all(&indicators);
+                if !hits.is_empty() {
+                    results.push(ioc_engine_result(&hits));
                 }
             }
         }
@@ -383,7 +384,7 @@ fn ioc_engine_result(hits: &[ioc_engine::IocMatch]) -> EngineResult {
                 engine: "ioc".into(),
                 name: format!("IOC.{source_label}"),
                 score: h.confidence as i32,
-                severity: Severity::High,
+                severity: Severity::Major,
                 explanation: format!(
                     "[{source_label}] {:?} «{}» — confiance {}%",
                     h.kind, h.ioc, h.confidence
@@ -486,8 +487,8 @@ mod tests {
 
     #[test]
     fn ioc_engine_detecte_url_urlhaus() {
-        use ioc_engine::{IocEngine, IocFeed};
         use ioc_engine::urlhaus::UrlhausFeed;
+        use ioc_engine::IocEngine;
 
         // Feed URLhaus avec une URL de test
         let mut feed = UrlhausFeed::new();

