@@ -2,7 +2,7 @@
 //!
 //! Les règles contiennent en clair des chaînes « malveillantes » (EICAR,
 //! messages de rançon, commandes PowerShell…). Embarquées telles quelles via
-//! `include_str!`, elles faisaient détecter `opticombat.dll` comme malveillante
+//! `include_str!`, elles faisaient détecter `opticombat_engine.dll` comme malveillante
 //! par son propre moteur (auto-détection) et par les antivirus tiers.
 
 use std::path::PathBuf;

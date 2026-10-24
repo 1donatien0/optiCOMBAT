@@ -48,11 +48,11 @@ else {
 }
 
 if (Get-Command cargo -ErrorAction SilentlyContinue) {
-    Write-Host '==> Deploiement opticombat.dll (Rust)...' -ForegroundColor Cyan
+    Write-Host '==> Deploiement opticombat_engine.dll (Rust)...' -ForegroundColor Cyan
     & (Join-Path $root 'scripts\build-engine.ps1') -Unblock
 }
 else {
-    Write-Host 'cargo absent — opticombat.dll non redeployee (repli ClamAV OK).' -ForegroundColor DarkYellow
+    Write-Host 'cargo absent — opticombat_engine.dll non redeployee (repli ClamAV OK).' -ForegroundColor DarkYellow
 }
 
 Write-Host ''

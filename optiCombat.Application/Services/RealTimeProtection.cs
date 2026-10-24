@@ -27,6 +27,9 @@ namespace optiCombat.Services
         public event EventHandler<Models.ThreatInfo>? ThreatDetected;
         public bool IsEnabled => _isEnabled;
 
+        /// <summary>Dossiers surveillés imposés (tests) ; sinon <see cref="RealTimeWatchPaths"/>.</summary>
+        internal Func<IEnumerable<string>>? WatchFoldersOverride { get; set; }
+
         /// <summary>Ignore les événements watcher pendant un scan manuel (compteur réentrant).</summary>
         public void Suspend() => Interlocked.Increment(ref _suspendCount);
 
@@ -76,7 +79,7 @@ namespace optiCombat.Services
         {
             if (_isEnabled) return;
 
-            foreach (var folder in RealTimeWatchPaths.GetWatchFolders(_exclusions))
+            foreach (var folder in WatchFoldersOverride?.Invoke() ?? RealTimeWatchPaths.GetWatchFolders(_exclusions))
                 AddWatcher(folder);
 
             // Cleanup périodique du cache : toutes les 5 min, on supprime les
@@ -293,10 +296,7 @@ namespace optiCombat.Services
 
                         if (_exclusions.Current.AutoQuarantineEnabled)
                         {
-                            if (_prefs.Current.BackupBeforeQuarantine)
-                                ThreatRemediationService.TryCreateSafetyCopy(threat);
-
-                            // Quarantaine automatique activée par l'utilisateur
+                            // Quarantaine automatique (copie de sécurité éventuelle faite par QuarantineManager).
                             if (_quarantineManager.Quarantine(threat, result.SessionId))
                             {
                                 WriteLog($"[RTP] Quarantaine auto : {threat.FileName} ({threat.VirusName})");

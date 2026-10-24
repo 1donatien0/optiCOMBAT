@@ -47,6 +47,15 @@ public static class ServiceRegistration
             new ThreatReputationService(preferences: sp.GetRequiredService<IUserPreferencesAccessor>()));
         services.AddSingleton<IThreatReputationService>(sp => sp.GetRequiredService<ThreatReputationService>());
         services.AddSingleton<CloudThreatIntelService>();
+        // Threat intel hors-ligne abuse.ch : chaque export remplacé invalide la copie chargée par
+        // le cœur Rust, rechargée au scan natif suivant.
+        services.AddSingleton<ThreatIntelFeedUpdater>(sp =>
+        {
+            var updater = new ThreatIntelFeedUpdater(sp.GetRequiredService<IUserPreferencesAccessor>());
+            var native = sp.GetRequiredService<OptiCombatScanEngine>();
+            updater.FeedsUpdated += (_, _) => native.InvalidateThreatIntel();
+            return updater;
+        });
         services.AddSingleton<ISecurityPostureService, SecurityPostureService>();
         services.AddSingleton<SignatureStatusService>(sp =>
             new SignatureStatusService(
@@ -94,6 +103,7 @@ public static class ServiceRegistration
                 sp.GetRequiredService<IUserPreferencesAccessor>(),
                 sp.GetRequiredService<IExclusionSettingsAccessor>()));
         services.AddSingleton<ScheduledScanService>();
+        services.AddSingleton<UpdateService>();
         return services;
     }
 }

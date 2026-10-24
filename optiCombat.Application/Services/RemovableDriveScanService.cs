@@ -38,6 +38,13 @@ namespace optiCombat.Services
         private bool _started;
         private bool _disposed;
 
+        /// <summary>Tests uniquement : lecteurs présents, taille d'un lecteur, délai de montage.</summary>
+        internal Func<IReadOnlyCollection<string>, IReadOnlyList<string>>? NewRootsProbe { get; set; }
+
+        internal Func<string, long?>? DriveSizeProbe { get; set; }
+
+        internal int MountSettleDelayMilliseconds { get; set; } = MountSettleDelayMs;
+
         public event EventHandler<ThreatInfo>? ThreatDetected;
 
         /// <summary>Émis au début et à la fin d'une analyse USB (thread pool — marshaler vers l'UI).</summary>
@@ -104,8 +111,11 @@ namespace optiCombat.Services
 
         private void SeedKnownRemovableRoots()
         {
-            foreach (var root in RemovableDriveDiscovery.GetReadyRemovableRoots())
-                _knownRoots.Add(root);
+            lock (_knownRoots)
+            {
+                foreach (var root in RemovableDriveDiscovery.GetReadyRemovableRoots())
+                    _knownRoots.Add(root);
+            }
         }
 
         private void TryStartVolumeWatcher()
@@ -133,17 +143,7 @@ namespace optiCombat.Services
 
                 var eventType = Convert.ToInt32(props["EventType"]?.Value ?? 0);
                 var driveName = props["DriveName"]?.Value as string;
-
-                if (eventType == WmiDeviceRemoval && !string.IsNullOrWhiteSpace(driveName))
-                {
-                    var root = RemovableDriveDiscovery.NormalizeRootFromDriveName(driveName);
-                    if (root != null)
-                        _knownRoots.Remove(root);
-                    return;
-                }
-
-                if (eventType == WmiDeviceArrival)
-                    _ = ScheduleScanNewDrivesAsync();
+                _ = HandleVolumeEvent(eventType, driveName);
             }
             catch (Exception ex)
             {
@@ -151,23 +151,48 @@ namespace optiCombat.Services
             }
         }
 
+        /// <summary>Retrait : le lecteur est oublié (rebranché = rescanné). Arrivée : recherche des nouveaux lecteurs.</summary>
+        internal Task HandleVolumeEvent(int eventType, string? driveName)
+        {
+            if (eventType == WmiDeviceRemoval && !string.IsNullOrWhiteSpace(driveName))
+            {
+                var root = RemovableDriveDiscovery.NormalizeRootFromDriveName(driveName);
+                if (root != null)
+                {
+                    lock (_knownRoots)
+                        _knownRoots.Remove(root);
+                }
+                return Task.CompletedTask;
+            }
+
+            return eventType == WmiDeviceArrival ? ScheduleScanNewDrivesAsync() : Task.CompletedTask;
+        }
+
         private void PollForNewDrives() =>
             _ = ScheduleScanNewDrivesAsync();
 
-        private async Task ScheduleScanNewDrivesAsync()
+        /// <summary>
+        /// Les nouveaux lecteurs sont « réservés » sous verrou avant d'être scannés : le minuteur et
+        /// l'événement WMI pouvaient auparavant trouver la même clé en même temps (double scan) et
+        /// modifier l'ensemble sans synchronisation.
+        /// </summary>
+        internal async Task ScheduleScanNewDrivesAsync()
         {
             if (!_prefs.Current.RemovableDriveScanEnabled)
                 return;
 
             try
             {
-                await Task.Delay(MountSettleDelayMs).ConfigureAwait(false);
-                var newRoots = RemovableDriveDiscovery.FindNewRemovableRoots(_knownRoots);
-                foreach (var root in newRoots)
+                await Task.Delay(MountSettleDelayMilliseconds).ConfigureAwait(false);
+                List<string> claimed;
+                lock (_knownRoots)
                 {
-                    _knownRoots.Add(root);
-                    await ScanRootIfEligibleAsync(root).ConfigureAwait(false);
+                    var candidates = NewRootsProbe?.Invoke(_knownRoots.ToList())
+                        ?? RemovableDriveDiscovery.FindNewRemovableRoots(_knownRoots);
+                    claimed = candidates.Where(_knownRoots.Add).ToList();
                 }
+                foreach (var root in claimed)
+                    await ScanRootIfEligibleAsync(root).ConfigureAwait(false);
             }
             catch (Exception ex)
             {
@@ -175,15 +200,26 @@ namespace optiCombat.Services
             }
         }
 
-        private async Task ScanRootIfEligibleAsync(string root)
+        internal async Task ScanRootIfEligibleAsync(string root)
         {
             if (!_prefs.Current.RemovableDriveScanEnabled)
                 return;
 
-            if (!RemovableDriveDiscovery.TryGetDriveInfo(root, out var drive))
-                return;
+            long totalSize;
+            if (DriveSizeProbe is { } probe)
+            {
+                if (probe(root) is not { } size)
+                    return;
+                totalSize = size;
+            }
+            else
+            {
+                if (!RemovableDriveDiscovery.TryGetDriveInfo(root, out var drive))
+                    return;
+                totalSize = drive.TotalSize;
+            }
 
-            if (!RemovableDriveDiscovery.IsWithinSizeLimit(drive.TotalSize, _prefs.Current.RemovableDriveMaxSizeGb))
+            if (!RemovableDriveDiscovery.IsWithinSizeLimit(totalSize, _prefs.Current.RemovableDriveMaxSizeGb))
             {
                 AppLogger.Info("RemovableDriveScan", $"Lecteur ignoré (taille) : {root}");
                 return;

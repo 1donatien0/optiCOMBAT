@@ -108,7 +108,7 @@ Invoke-Step 'dotnet publish' {
 }
 
 if (-not $SkipEngine) {
-    Invoke-Step 'Moteur Rust (opticombat.dll)' {
+    Invoke-Step 'Moteur Rust (opticombat_engine.dll)' {
         & (Join-Path $root 'scripts\build-engine.ps1') -ExtraOutputDirs @($pubDir)
     }
 }

@@ -90,7 +90,7 @@ namespace optiCombat.Services
         public bool UseClamdEngine { get; set; } = true;
 
         /// <summary>
-        /// Cœur Rust optiCombat (opticombat.dll) — expérimental, désactivé par défaut.
+        /// Cœur Rust optiCombat (opticombat_engine.dll) — expérimental, désactivé par défaut.
         /// Activé, il remplace le pipeline ClamAV + YARA (règles YARA Forge non chargées,
         /// signatures ClamAV uniquement via clamd). Audit 360 : opt-in explicite.
         /// </summary>
@@ -113,6 +113,12 @@ namespace optiCombat.Services
 
         /// <summary>Clé API VirusTotal (optionnelle, stockée chiffrée via SecureStore).</summary>
         public string VirusTotalApiKey { get; set; } = string.Empty;
+
+        /// <summary>
+        /// Auth-Key abuse.ch (gratuite) pour télécharger MalwareBazaar, URLhaus et ThreatFox.
+        /// Vide = threat intel hors-ligne désactivée. Stockée chiffrée via SecureStore.
+        /// </summary>
+        public string AbuseChAuthKey { get; set; } = string.Empty;
 
         /// <summary>
         /// Mode complément de Windows Defender : Defender garde le temps réel, optiCOMBAT fait les analyses

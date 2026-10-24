@@ -20,6 +20,15 @@ public static class PlatformProtectionBootstrap
             _prefs = preferences;
     }
 
+    /// <summary>Tests uniquement : sonde IPC, dossier des exécutables et délai d'attente du service.</summary>
+    internal static Func<bool>? RemoteProbeOverride { get; set; }
+
+    internal static string? BaseDirectoryOverride { get; set; }
+
+    internal static TimeSpan StartPollDelay { get; set; } = TimeSpan.FromMilliseconds(500);
+
+    private static string BaseDirectory => BaseDirectoryOverride ?? AppContext.BaseDirectory;
+
     public static bool IsPlatformModeEnabled() =>
         _prefs.Current.UsePlatformProtectionService;
 
@@ -27,6 +36,9 @@ public static class PlatformProtectionBootstrap
     {
         if (!IsPlatformModeEnabled())
             return false;
+
+        if (RemoteProbeOverride is { } probe)
+            return probe();
 
         try
         {
@@ -57,7 +69,7 @@ public static class PlatformProtectionBootstrap
     {
         try
         {
-            var serviceExe = Path.Combine(AppContext.BaseDirectory, "optiCombat.Service.exe");
+            var serviceExe = Path.Combine(BaseDirectory, "optiCombat.Service.exe");
             if (!File.Exists(serviceExe))
             {
                 AppLogger.Warn("PlatformProtection", "optiCombat.Service.exe absent");
@@ -93,7 +105,7 @@ public static class PlatformProtectionBootstrap
             {
                 if (IsRemoteProtectionActive())
                     return true;
-                Thread.Sleep(500);
+                Thread.Sleep(StartPollDelay);
             }
 
             return IsRemoteProtectionActive();
@@ -109,7 +121,7 @@ public static class PlatformProtectionBootstrap
     {
         try
         {
-            var exe = Path.Combine(AppContext.BaseDirectory, "optiCombat.exe");
+            var exe = Path.Combine(BaseDirectory, "optiCombat.exe");
             if (!File.Exists(exe))
                 return;
 
@@ -120,8 +132,8 @@ public static class PlatformProtectionBootstrap
                 CreateNoWindow = true,
             };
             psi.ArgumentList.Add("--service-host");
-            Process.Start(psi);
-            AppLogger.Info("PlatformProtection", "Processus --service-host lancé (secours)");
+            if (SystemShell.Current.Run(psi, timeoutMs: null).Started)
+                AppLogger.Info("PlatformProtection", "Processus --service-host lancé (secours)");
         }
         catch (Exception ex)
         {
@@ -160,19 +172,15 @@ public static class PlatformProtectionBootstrap
     {
         try
         {
-            using var proc = Process.Start(new ProcessStartInfo
+            var outcome = SystemShell.Current.Run(new ProcessStartInfo
             {
                 FileName = "sc.exe",
                 Arguments = $"query {ServiceName}",
                 UseShellExecute = false,
                 CreateNoWindow = true,
                 RedirectStandardOutput = true,
-            });
-            if (proc == null)
-                return false;
-            var output = proc.StandardOutput.ReadToEnd();
-            proc.WaitForExit(5_000);
-            return proc.ExitCode == 0 && output.Contains("SERVICE_NAME", StringComparison.OrdinalIgnoreCase);
+            }, 5_000);
+            return outcome.Succeeded && outcome.Output.Contains("SERVICE_NAME", StringComparison.OrdinalIgnoreCase);
         }
         catch
         {
@@ -180,15 +188,12 @@ public static class PlatformProtectionBootstrap
         }
     }
 
-    private static void RunSc(string arguments)
-    {
-        using var proc = Process.Start(new ProcessStartInfo
+    private static void RunSc(string arguments) =>
+        SystemShell.Current.Run(new ProcessStartInfo
         {
             FileName = "sc.exe",
             Arguments = arguments,
             UseShellExecute = false,
             CreateNoWindow = true,
-        });
-        proc?.WaitForExit(30_000);
-    }
+        }, 30_000);
 }

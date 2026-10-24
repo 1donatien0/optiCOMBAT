@@ -26,6 +26,8 @@
   <ItemGroup>
     <ProjectReference Include="..\optiCombat.Application\optiCombat.Application.csproj" />
     <ProjectReference Include="..\optiCombat.Platform\optiCombat.Platform.csproj" />
+    <!-- Outil externe factice (winget, freshclam, clamscan, yara…) copié dans la sortie des tests. -->
+    <ProjectReference Include="..\optiCombat.TestFakes\optiCombat.TestFakes.csproj" />
   </ItemGroup>
 
 </Project>

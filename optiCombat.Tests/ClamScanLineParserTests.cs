@@ -48,7 +48,9 @@ public sealed class ClamScanLineParserTests
     public void ProcessLine_OK_throttles_progress_after_500_files()
     {
         var reports = new List<int>();
-        var progress = new Progress<ScanProgress>(p =>
+        // IProgress synchrone : Progress<T> publie sur le pool de threads, et l'énumération de
+        // `reports` pendant un ajout tardif faisait échouer le test de façon aléatoire.
+        var progress = new SyncProgress(p =>
         {
             if (p.Phase == ScanPhase.Scanning && p.FilesScanned > 0)
                 reports.Add(p.FilesScanned);
@@ -63,5 +65,10 @@ public sealed class ClamScanLineParserTests
         Assert.Contains(500, reports);
         Assert.Contains(600, reports);
         Assert.Contains(1000, reports);
+    }
+
+    private sealed class SyncProgress(Action<ScanProgress> onReport) : IProgress<ScanProgress>
+    {
+        public void Report(ScanProgress value) => onReport(value);
     }
 }

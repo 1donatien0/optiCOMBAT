@@ -414,6 +414,19 @@
                 <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="*" />
+                        <ColumnDefinition Width="260" />
+                    </Grid.ColumnDefinitions>
+                    <StackPanel VerticalAlignment="Center" Spacing="2">
+                        <TextBlock loc:Loc.Text="Opt_AbuseChKey" />
+                        <TextBlock Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" loc:Loc.Text="Opt_AbuseChCaption" />
+                        <TextBlock x:Name="ThreatIntelStatusText" Style="{StaticResource OptionCaptionStyle}" TextWrapping="Wrap" />
+                    </StackPanel>
+                    <PasswordBox x:Name="AbuseChBox" Grid.Column="1" VerticalAlignment="Center" LostFocus="AbuseChKey_LostFocus" />
+                </Grid>
+
+                <Grid Style="{StaticResource OptionRowStyle}" ColumnSpacing="16">
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="*" />
                         <ColumnDefinition Width="Auto" />
                     </Grid.ColumnDefinitions>
                     <StackPanel VerticalAlignment="Center" Spacing="2">

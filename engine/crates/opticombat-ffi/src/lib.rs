@@ -13,7 +13,7 @@
 use std::ffi::{c_char, c_int, CStr, CString};
 use std::panic::catch_unwind;
 use std::path::Path;
-use std::sync::OnceLock;
+use std::sync::{Arc, RwLock};
 
 use dispatcher::Dispatcher;
 use engine_core::Verdict;
@@ -26,9 +26,32 @@ pub const OC_ERROR: c_int = -1;
 
 /// Dispatcher partagé, construit au premier appel puis réutilisé : auparavant
 /// chaque appel FFI recompilait les automates YARA et sondait clamd.
-fn dispatcher() -> &'static Dispatcher {
-    static DISPATCHER: OnceLock<Dispatcher> = OnceLock::new();
-    DISPATCHER.get_or_init(Dispatcher::new)
+///
+/// Il est remplaçable à chaud par [`opticombat_load_threat_intel`] : les analyses en
+/// cours gardent leur `Arc` vers l'ancienne instance, les suivantes voient la nouvelle.
+static DISPATCHER: RwLock<Option<Arc<Dispatcher>>> = RwLock::new(None);
+
+fn dispatcher() -> Arc<Dispatcher> {
+    if let Some(d) = DISPATCHER
+        .read()
+        .unwrap_or_else(|e| e.into_inner())
+        .as_ref()
+    {
+        return Arc::clone(d);
+    }
+    let mut slot = DISPATCHER.write().unwrap_or_else(|e| e.into_inner());
+    Arc::clone(slot.get_or_insert_with(|| Arc::new(Dispatcher::new())))
+}
+
+fn install_dispatcher(d: Dispatcher) {
+    *DISPATCHER.write().unwrap_or_else(|e| e.into_inner()) = Some(Arc::new(d));
+}
+
+fn into_c_string(s: String) -> *mut c_char {
+    match CString::new(s) {
+        Ok(c) => c.into_raw(),
+        Err(_) => std::ptr::null_mut(),
+    }
 }
 
 fn verdict_code(v: Verdict) -> c_int {
@@ -83,12 +106,46 @@ pub unsafe extern "C" fn opticombat_scan_json(path: *const c_char) -> *mut c_cha
         Some(decision_to_json(p, &decision, d.clamd_available()))
     });
     match result {
-        Ok(Some(json)) => match CString::new(json) {
-            Ok(c) => c.into_raw(),
-            Err(_) => std::ptr::null_mut(),
-        },
+        Ok(Some(json)) => into_c_string(json),
         _ => std::ptr::null_mut(),
     }
+}
+
+/// Charge (ou recharge) la threat intel abuse.ch depuis un dossier local et
+/// remplace le dispatcher partagé. Fichiers reconnus : voir `dispatcher::threat_intel`.
+///
+/// Renvoie le nombre total d'entrées chargées (0 si le dossier ne contient aucun
+/// feed exploitable), ou `-1` si `dir` est nul, n'est pas de l'UTF-8 valide ou ne
+/// désigne pas un dossier existant (le dispatcher courant est alors conservé).
+///
+/// # Safety
+/// `dir` doit pointer vers une chaîne C valide ou être nul.
+#[no_mangle]
+pub unsafe extern "C" fn opticombat_load_threat_intel(dir: *const c_char) -> i64 {
+    catch_unwind(|| {
+        let Some(d) = cstr_to_str(dir) else {
+            return -1;
+        };
+        let path = Path::new(d);
+        if !path.is_dir() {
+            return -1;
+        }
+        let next = Dispatcher::with_threat_intel_dir(path);
+        let total = next.threat_intel_stats().total() as i64;
+        install_dispatcher(next);
+        total
+    })
+    .unwrap_or(-1)
+}
+
+/// Compteurs de la threat intel chargée, en JSON :
+/// `{"malwarebazaar":N,"urlhaus":N,"threatfox":N,"total":N}`.
+/// À libérer par [`opticombat_string_free`].
+#[no_mangle]
+pub extern "C" fn opticombat_threat_intel_stats() -> *mut c_char {
+    catch_unwind(|| dispatcher().threat_intel_stats().to_json())
+        .map(into_c_string)
+        .unwrap_or(std::ptr::null_mut())
 }
 
 /// Libère une chaîne précédemment renvoyée par l'ABI.
@@ -200,6 +257,107 @@ mod tests {
     fn scan_path_null_is_error() {
         let code = unsafe { opticombat_scan_path(std::ptr::null()) };
         assert_eq!(code, OC_ERROR);
+    }
+
+    fn ffi_dir(tag: &str) -> std::path::PathBuf {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static N: AtomicU32 = AtomicU32::new(0);
+        let d = std::env::temp_dir().join(format!(
+            "oc_ffi_ti_{tag}_{}_{}",
+            std::process::id(),
+            N.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    fn take_string(raw: *mut c_char) -> String {
+        assert!(!raw.is_null());
+        let s = unsafe { CStr::from_ptr(raw).to_str().unwrap().to_string() };
+        unsafe { opticombat_string_free(raw) };
+        s
+    }
+
+    #[test]
+    fn load_threat_intel_refuse_les_entrees_invalides() {
+        assert_eq!(
+            unsafe { opticombat_load_threat_intel(std::ptr::null()) },
+            -1
+        );
+        let missing = CString::new("/oc/dossier/inexistant").unwrap();
+        assert_eq!(
+            unsafe { opticombat_load_threat_intel(missing.as_ptr()) },
+            -1
+        );
+        let bad = [0xffu8, 0xfe, 0x00];
+        assert_eq!(
+            unsafe { opticombat_load_threat_intel(bad.as_ptr() as *const c_char) },
+            -1
+        );
+    }
+
+    #[test]
+    fn load_threat_intel_detecte_un_hash_malwarebazaar() {
+        let payload = b"echantillon ffi malwarebazaar opticombat";
+        let sha = reputation_sha256(payload);
+        let dir = ffi_dir("mb");
+        std::fs::write(dir.join("malwarebazaar_sha256.txt"), format!("{sha}\n")).unwrap();
+        let c = CString::new(dir.to_str().unwrap()).unwrap();
+        let total = unsafe { opticombat_load_threat_intel(c.as_ptr()) };
+        assert!(total >= 1, "total = {total}");
+
+        let stats = take_string(opticombat_threat_intel_stats());
+        assert!(stats.starts_with("{\"malwarebazaar\":"), "{stats}");
+
+        let (p, hold) = tmp(payload, "bin");
+        let cp = CString::new(p.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { opticombat_scan_path(cp.as_ptr()) }, OC_MALICIOUS);
+        let json = take_string(unsafe { opticombat_scan_json(cp.as_ptr()) });
+        assert!(json.contains("MalwareBazaar:Malware"), "{json}");
+        drop(hold);
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn load_threat_intel_dossier_vide_renvoie_zero() {
+        let dir = ffi_dir("empty");
+        let c = CString::new(dir.to_str().unwrap()).unwrap();
+        assert_eq!(unsafe { opticombat_load_threat_intel(c.as_ptr()) }, 0);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn version_et_json_escape() {
+        let v = unsafe { CStr::from_ptr(opticombat_version()) }
+            .to_str()
+            .unwrap();
+        assert_eq!(v, env!("CARGO_PKG_VERSION"));
+        assert_eq!(
+            json_escape("a\"b\\c\n\r\t\u{1}"),
+            "a\\\"b\\\\c\\n\\r\\t\\u0001"
+        );
+        unsafe { opticombat_string_free(std::ptr::null_mut()) };
+    }
+
+    #[test]
+    fn scan_json_null_et_chemin_absent() {
+        assert!(unsafe { opticombat_scan_json(std::ptr::null()) }.is_null());
+        let missing = CString::new("/oc/fichier/absent.bin").unwrap();
+        assert!(unsafe { opticombat_scan_json(missing.as_ptr()) }.is_null());
+        assert_eq!(unsafe { opticombat_scan_path(missing.as_ptr()) }, OC_ERROR);
+    }
+
+    #[test]
+    fn verdict_code_couvre_tous_les_verdicts() {
+        assert_eq!(verdict_code(Verdict::Clean), OC_CLEAN);
+        assert_eq!(verdict_code(Verdict::Inconclusive), OC_CLEAN);
+        assert_eq!(verdict_code(Verdict::Suspicious), OC_SUSPICIOUS);
+        assert_eq!(verdict_code(Verdict::Malicious), OC_MALICIOUS);
+    }
+
+    fn reputation_sha256(data: &[u8]) -> String {
+        reputation::ReputationEngine::sha256_hex(data)
     }
 
     #[test]

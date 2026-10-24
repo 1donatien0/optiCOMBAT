@@ -6,7 +6,7 @@ rust-version.workspace = true
 license.workspace = true
 
 [lib]
-name = "opticombat"
+name = "opticombat_engine"
 # cdylib : DLL/.so consommable par C# (P/Invoke) et C.
 # staticlib : édition de liens statique éventuelle.
 crate-type = ["cdylib", "staticlib", "lib"]
@@ -15,3 +15,6 @@ crate-type = ["cdylib", "staticlib", "lib"]
 engine-core = { path = "../engine-core" }
 dispatcher = { path = "../dispatcher" }
 correlator = { path = "../correlator" }
+
+[dev-dependencies]
+reputation = { path = "../reputation" }

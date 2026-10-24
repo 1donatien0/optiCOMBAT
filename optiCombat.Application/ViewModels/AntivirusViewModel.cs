@@ -466,7 +466,8 @@ public sealed class AntivirusViewModel : INotifyPropertyChanged
                 _container.FreshclamUpdater,
                 _container.RulesUpdater,
                 AppendSignatureLog,
-                _updateCts.Token).ConfigureAwait(true);
+                _updateCts.Token,
+                _container.ThreatIntelUpdater).ConfigureAwait(true);
 
             _signatureStatus.InvalidateCache();
             await RefreshSignaturesAsync(force: true).ConfigureAwait(true);

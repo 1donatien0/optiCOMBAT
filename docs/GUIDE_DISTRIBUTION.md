@@ -7,7 +7,7 @@ Publication d’optiCOMBAT chez des utilisateurs tiers : **signature**, **cohabi
 ## 1. Mode de protection livré (v1.0)
 
 - **Temps réel user-mode** (`FileSystemWatcher` + surveillance des processus) — aucun pilote requis.
-- Scans à la demande / planifiés (ClamAV + YARA, cœur Rust si `opticombat.dll` est livrée), quarantaine, historique.
+- Scans à la demande / planifiés (ClamAV + YARA, cœur Rust si `opticombat_engine.dll` est livrée), quarantaine, historique.
 - Couche plateforme (service, AMSI, minifiltre) **inactive** : l’installateur ne crée pas le service et les Options ne l’exposent pas.
 - Publication **self-contained** dans tous les cas : `prepare-release.ps1` utilise le profil `FolderProfile-SelfContained` ; `-SelfContained` publie seulement vers `publish\win-x64` à la racine.
 
@@ -66,7 +66,7 @@ La désinstallation n’est utile que pour retirer le produit.
 
 ## 7. Checklist release
 
-- [ ] `dotnet test` Release vert (**618 / 618**, couverture ≥ 62 %) et CI verte (CodeQL, Gitleaks)
+- [ ] `dotnet test` Release vert (**943** tests ; couverture lignes Windows **89,8 %**, plancher CI 85 %) et CI verte (CodeQL, Gitleaks)
 - [ ] `prepare-release.ps1` → `installer\output\optiCombat_Setup_v1.0.0.exe`
 - [ ] SHA-256 du setup publié avec le binaire
 - [ ] Test sur poste vierge : install, scan, RTP, quarantaine, FR/EN

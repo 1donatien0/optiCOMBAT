@@ -7,7 +7,7 @@ cases vides = ancrage plateforme / chantier restant.
 ## Qualité du cœur Rust
 
 - [x] Workspace compile (`cargo build --workspace`).
-- [x] Tests verts (`cargo test --workspace`, 62 tests) — exécutés en CI Windows.
+- [x] Tests verts (`cargo test --workspace`, 170 tests + 1 doctest, couverture de lignes 92,6 %).
 - [x] Clippy sans avertissement (`-D warnings`).
 - [x] Format vérifié (`cargo fmt --all --check`).
 - [x] Harnais de robustesse anti-crash (3 500+ entrées malformées, zéro panic).
@@ -24,6 +24,7 @@ cases vides = ancrage plateforme / chantier restant.
 - [x] Classifieur ML (familles), interface d'inférence en place.
 - [x] Modèle ML entraîné (softmax, crate `ml-train`, ~89 % d'exactitude, poids appris baqués).
 - [x] Réputation par hash (whitelist/blacklist + cloud HTTP via feature `http` + `OPTICOMBAT_REPUTATION_URL`).
+- [x] Threat intel hors-ligne : `MalwareBazaarDb`, URLhaus et ThreatFox chargés depuis un dossier local (`ThreatIntelBundle`). Le shell télécharge les exports si une Auth-Key abuse.ch est enregistrée ; le cœur Rust ne contacte pas le réseau.
 - [x] Scan d'archives ZIP récursif (garde-fous anti zip-bomb).
 - [x] Scan mémoire (indicateurs shellcode + YARA sur buffer).
 - [ ] yara-x pour compatibilité YARA totale (hex/regex/modules).
@@ -49,12 +50,12 @@ cases vides = ancrage plateforme / chantier restant.
 - [x] Façade d'orchestration `scan-service` (scan + quarantaine auto).
 - [x] `IScanEngine` adossé au cœur Rust (`OptiCombatScanEngine.cs`) — **intégré dans `optiCombat.Application/Services/OptiCombat/`**.
 - [x] DI câblée : `UseOptiCombatEngine()` appelée dans `ServiceRegistration` (override `IScanEngine`, repli ClamAV).
-- [x] Scan UI (`AntivirusViewModel` → `ScanOrchestrator` → cœur Rust) routé quand `opticombat.dll` est présente.
+- [x] Scan UI (`AntivirusViewModel` → `ScanOrchestrator` → cœur Rust) routé quand `opticombat_engine.dll` est présente.
 - [ ] CI Windows : tester les bindings `windows-platform` (DPAPI / `ReadProcessMemory`).
-- [x] Déploiement : `scripts/build-engine.ps1` (copie multi-sorties) + entrée `opticombat.dll` dans l'installateur.
+- [x] Déploiement : `scripts/build-engine.ps1` (copie multi-sorties) + entrée `opticombat_engine.dll` dans l'installateur.
 
 - [x] Build C# Windows confirmé **avec** l'intégration (compilation OK).
-- [x] **Détection réelle validée de bout en bout** : EICAR détecté via l'UI par le moteur Rust (`opticombat.dll` déployée).
+- [x] **Détection réelle validée de bout en bout** : EICAR détecté via l'UI par le moteur Rust (`opticombat_engine.dll` déployée).
 - [x] `ProtectionScanGateway` : RTP / processus routés via IPC si service joignable, repli orchestrateur local.
 - [x] `--service-host` : scans in-process (pas de boucle IPC) ; pipe expose `engine=opticombat;native=1` si DLL présente.
 - [ ] Qualification panel exécutée en CI avec échantillons réels (au-delà EICAR + synthétiques + bénins).

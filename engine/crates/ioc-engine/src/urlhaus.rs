@@ -7,7 +7,7 @@
 //! Le fichier est téléchargé par la couche C# et stocké dans
 //! `%LocalAppData%\optiCombat\threat_intel\urlhaus.txt`.
 
-use crate::{extract_host, IocFeed, IocKind, IocMatch, IocSource};
+use crate::{extract_host, IocFeed, IocKind, IocMatch, IocSource, MAX_FEED_ENTRIES};
 use std::collections::HashSet;
 
 /// Base URLhaus chargée hors-ligne depuis le fichier texte ou CSV.
@@ -32,6 +32,9 @@ impl UrlhausFeed {
     pub fn load_text(&mut self, text: &str) -> usize {
         let mut count = 0usize;
         for line in text.lines() {
+            if self.urls.len() >= MAX_FEED_ENTRIES {
+                break;
+            }
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
@@ -57,13 +60,16 @@ impl UrlhausFeed {
     pub fn load_csv(&mut self, csv: &str) -> usize {
         let mut count = 0usize;
         for line in csv.lines() {
+            if self.urls.len() >= MAX_FEED_ENTRIES {
+                break;
+            }
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;
             }
             // L'URL est en 3ème colonne (index 2).
             let url = match csv_nth_field(line, 2) {
-                Some(u) => u.to_ascii_lowercase(),
+                Some(u) => u.trim().to_ascii_lowercase(),
                 None => continue,
             };
             if !url.starts_with("http") && !url.starts_with("ftp") {

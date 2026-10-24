@@ -11,7 +11,8 @@ namespace optiCombat.Services
             FreshclamUpdater? freshclam,
             YaraForgeUpdater? rules,
             Action<string> appendLog,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            ThreatIntelFeedUpdater? threatIntel = null)
         {
             using var timeoutCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
             timeoutCts.CancelAfter(FullUpdateTimeout);
@@ -43,6 +44,20 @@ namespace optiCombat.Services
                     ? UiLogText.Ok($"{LocalizationService.GetString("SigUpd_LabelRules")} : {rulesResult.Message}")
                     : UiLogText.Error($"{LocalizationService.GetString("SigUpd_LabelRules")} : {rulesResult.Message}"));
                 if (!rulesResult.Success)
+                    ok = false;
+            }
+
+            if (threatIntel != null)
+            {
+                appendLog("");
+                appendLog(LocalizationService.GetString("SigUpd_StepIntel"));
+                var intel = await threatIntel.UpdateAsync(force: true, ct).ConfigureAwait(false);
+                var label = LocalizationService.GetString("SigUpd_LabelIntel");
+                // Pas de clé abuse.ch : étape facultative, signalée sans compter comme un échec.
+                appendLog(intel.Success
+                    ? UiLogText.Ok($"{label} : {intel.Message}")
+                    : UiLogText.Error($"{label} : {intel.Message}"));
+                if (!intel.Success)
                     ok = false;
             }
 

@@ -15,11 +15,11 @@ permissions:
 
 env:
   # Couverture lignes .NET : plancher bloquant / cible progressive (voir CONTRIBUTING.md)
-  COVERAGE_FLOOR: "0.62"
-  COVERAGE_TARGET: "0.65"
+  COVERAGE_FLOOR: "0.85"
+  COVERAGE_TARGET: "0.90"
   # Couverture lignes Rust (cargo-llvm-cov, en %) : plancher bloquant / cible
-  RUST_COVERAGE_FLOOR: "65"
-  RUST_COVERAGE_TARGET: "75"
+  RUST_COVERAGE_FLOOR: "90"
+  RUST_COVERAGE_TARGET: "95"
 
 jobs:
   format:

@@ -29,7 +29,7 @@ $paths = @(
 $processes = @(
     'optiCombat.exe'
     'optiCombat.Service.exe'
-    'opticombat.dll'
+    'opticombat_engine.dll'
     'clamscan.exe'
     'freshclam.exe'
     'clamd.exe'
@@ -51,9 +51,9 @@ Write-Host 'Etapes Kaspersky :' -ForegroundColor Green
 Write-Host '  1. Ouvrir Kaspersky → Parametres (engrenage)'
 Write-Host '  2. Protection → Gestion des exclusions → Ajouter'
 Write-Host '  3. Ajouter les dossiers ci-dessus (developpement : surtout le depot Git)'
-Write-Host '  4. Ajouter optiCombat.exe et opticombat.dll (moteur natif)'
+Write-Host '  4. Ajouter optiCombat.exe et opticombat_engine.dll (moteur natif)'
 Write-Host '  5. Quarantaine → restaurer optiCombat si deja bloque'
 Write-Host ''
-Write-Host 'Dev : supprimez opticombat.dll si c''est une copie de optiCombat.dll,' -ForegroundColor DarkYellow
+Write-Host 'Dev : supprimez opticombat_engine.dll si c''est une copie de optiCombat.dll,' -ForegroundColor DarkYellow
 Write-Host '      puis scripts\build-engine.ps1' -ForegroundColor DarkYellow
 Write-Host ''

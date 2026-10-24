@@ -140,7 +140,7 @@ namespace optiCombat.Services
             }
         }
 
-        private static void TrySeedSignatureFiles(string readOnlySourceDir, string writableDestDir)
+        internal static void TrySeedSignatureFiles(string readOnlySourceDir, string writableDestDir)
         {
             try
             {

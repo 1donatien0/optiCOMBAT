@@ -7,7 +7,7 @@ using System.Linq;
 namespace optiCombat.Services
 {
     /// <summary>
-    /// Coordonne les scans antivirus. Délègue au cœur Rust optiCombat (opticombat.dll)
+    /// Coordonne les scans antivirus. Délègue au cœur Rust optiCombat (opticombat_engine.dll)
     /// lorsque la bibliothèque native est déployée ; sinon lance ClamAV et YARA en parallèle
     /// (<see cref="Task.WhenAll"/>) puis fusionne leurs résultats.
     /// </summary>
@@ -28,7 +28,7 @@ namespace optiCombat.Services
         // ── État ─────────────────────────────────────────────────────────────────
 
         /// <summary>
-        /// <c>true</c> si le cœur Rust optiCombat (opticombat.dll) est chargeable <b>et</b> activé
+        /// <c>true</c> si le cœur Rust optiCombat (opticombat_engine.dll) est chargeable <b>et</b> activé
         /// (préférence <see cref="UserPreferences.UseNativeEngine"/>, désactivée par défaut, ou
         /// variable d'environnement <c>OPTICOMBAT_NATIVE_ENGINE=1</c>).
         /// </summary>

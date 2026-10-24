@@ -1,10 +1,10 @@
 <#
 .SYNOPSIS
-    Build optiCombat Rust cdylib and deploy opticombat.dll to .NET output folders.
+    Build optiCombat Rust cdylib and deploy opticombat_engine.dll to .NET output folders.
 
 .DESCRIPTION
     1. cargo build -p opticombat-ffi --release
-    2. Copy opticombat.dll next to every optiCombat.exe under optiCombat\bin\
+    2. Copy opticombat_engine.dll next to every optiCombat.exe under optiCombat\bin\
 
     Requires Rust stable (https://rustup.rs). Run from repository root.
 #>
@@ -23,7 +23,7 @@ Write-Host "Building optiCombat cdylib (release)..." -ForegroundColor Cyan
 cargo build --manifest-path engine\Cargo.toml -p opticombat-ffi --release
 if ($LASTEXITCODE -ne 0) { throw "Rust build failed." }
 
-$dll = Join-Path $root "engine\target\release\opticombat.dll"
+$dll = Join-Path $root "engine\target\release\opticombat_engine.dll"
 if (-not (Test-Path $dll)) { throw "Missing DLL: $dll" }
 
 $targets = @()
@@ -40,9 +40,9 @@ $sizeMb = [math]::Round((Get-Item $dll).Length / 1MB, 2)
 foreach ($t in ($targets | Select-Object -Unique)) {
     Copy-Item $dll -Destination $t -Force
     if ($Unblock) {
-        Unblock-File -LiteralPath (Join-Path $t 'opticombat.dll') -ErrorAction SilentlyContinue
+        Unblock-File -LiteralPath (Join-Path $t 'opticombat_engine.dll') -ErrorAction SilentlyContinue
     }
-    Write-Host ('Deployed opticombat.dll (' + $sizeMb + ' MB) to ' + $t) -ForegroundColor Green
+    Write-Host ('Deployed opticombat_engine.dll (' + $sizeMb + ' MB) to ' + $t) -ForegroundColor Green
 }
 
 if ($SignDev -or $env:OPTICOMBAT_DEV_SIGN -eq '1') {

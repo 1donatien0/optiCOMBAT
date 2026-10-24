@@ -94,7 +94,7 @@ namespace optiCombat.Services
                         DefenderExclusionStatus.AlreadyConfigured => DefenderExclusionOutcome.AlreadyConfigured,
                         DefenderExclusionStatus.NotApplicable or DefenderExclusionStatus.DefenderUnavailable
                             => DefenderExclusionOutcome.DefenderUnavailable,
-                        _ when ElevationHelper.IsRunningElevated() => DefenderExclusionOutcome.Refused,
+                        _ when (RunningElevatedOverride?.Invoke() ?? ElevationHelper.IsRunningElevated()) => DefenderExclusionOutcome.Refused,
                         _ => ElevationHelper.RelaunchElevated(HeadlessScanArguments.DefenderExclusions, HeadlessScanArguments.Quiet)
                             ? DefenderExclusionOutcome.ElevationRequested
                             : DefenderExclusionOutcome.Refused,
@@ -125,7 +125,7 @@ namespace optiCombat.Services
 
         public static DefenderExclusionResult EnsureOpticombatExclusions()
         {
-            if (!OperatingSystem.IsWindows())
+            if (!OperatingSystem.IsWindows() && DefenderPresentOverride is null)
                 return DefenderExclusionResult.NotApplicable();
 
             if (!IsWindowsDefenderPresent())
@@ -239,8 +239,15 @@ namespace optiCombat.Services
             return paths.OrderBy(p => p, StringComparer.OrdinalIgnoreCase).ToList();
         }
 
+        /// <summary>Tests uniquement : présence de Defender et compte élevé simulés.</summary>
+        internal static Func<bool>? DefenderPresentOverride { get; set; }
+
+        internal static Func<bool>? RunningElevatedOverride { get; set; }
+
         internal static bool IsWindowsDefenderPresent()
         {
+            if (DefenderPresentOverride is { } present)
+                return present();
             var mpcmd = Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 "Windows Defender",
@@ -248,7 +255,7 @@ namespace optiCombat.Services
             return File.Exists(mpcmd);
         }
 
-        private static DefenderExclusionResult ParseResult(int exitCode, string output)
+        internal static DefenderExclusionResult ParseResult(int exitCode, string output)
         {
             var line = output.Split('\n', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
                 .LastOrDefault() ?? string.Empty;
@@ -298,17 +305,10 @@ namespace optiCombat.Services
             psi.ArgumentList.Add("-Command");
             psi.ArgumentList.Add(script);
 
-            using var proc = Process.Start(psi)
-                ?? throw new InvalidOperationException("Impossible de lancer powershell.exe");
-
-            var stdout = proc.StandardOutput.ReadToEnd();
-            var stderr = proc.StandardError.ReadToEnd();
-            proc.WaitForExit(60_000);
-
-            var combined = string.IsNullOrWhiteSpace(stderr)
-                ? stdout
-                : stdout + Environment.NewLine + stderr;
-            return (proc.ExitCode, combined.Trim());
+            var outcome = SystemShell.Current.Run(psi, 60_000);
+            if (!outcome.Started)
+                throw new InvalidOperationException("Impossible de lancer powershell.exe");
+            return (outcome.ExitCode, outcome.Output);
         }
 
     }

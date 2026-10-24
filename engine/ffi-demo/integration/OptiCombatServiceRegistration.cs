@@ -36,6 +36,6 @@ namespace optiCombat.Services.DependencyInjection
 //   services.AddOpticombatCoreServices();
 //   services.UseOptiCombatEngine();   // ← bascule sur le cœur Rust, repli ClamAV
 //
-// Déploiement : placer opticombat.dll (build `cargo build -p opticombat-ffi
+// Déploiement : placer opticombat_engine.dll (build `cargo build -p opticombat-ffi
 // --release`) à côté de optiCombat.exe. Aucun autre changement : ScanOrchestrator,
 // QuarantineManager, l'UI et le RTP consomment IScanEngine inchangé.

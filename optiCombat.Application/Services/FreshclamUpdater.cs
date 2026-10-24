@@ -54,6 +54,11 @@ namespace optiCombat.Services
 
         // ── Constructeur ──────────────────────────────────────────────────────────
 
+        /// <summary>Tests uniquement : sonde réseau et client HTTP du certificat (jamais le réseau réel).</summary>
+        internal Func<bool>? NetworkProbeOverride { get; set; }
+
+        internal HttpClient? CertificateHttpOverride { get; set; }
+
         public FreshclamUpdater(string? clamavDir = null)
         {
             var dir = clamavDir ?? ClamAvDatabasePaths.ResolveClamAvBinDir("freshclam.exe");
@@ -152,7 +157,7 @@ namespace optiCombat.Services
                 }
 
                 // Pré-vérification : connectivité réseau (évite un timeout long et opaque).
-                if (!IsNetworkAvailable())
+                if (!(NetworkProbeOverride?.Invoke() ?? IsNetworkAvailable()))
                 {
                     result.Success = false;
                     result.Message = LocalizationService.GetString("Freshclam_NoNetwork");
@@ -513,10 +518,8 @@ namespace optiCombat.Services
         /// </summary>
         private string? EnsureConfExists()
         {
-            var fallbackDir = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "optiCombat", "clamav");
-            var fallbackConf = Path.Combine(fallbackDir, "freshclam.conf");
+            // %LocalAppData%\optiCombat\clamav\freshclam.conf (dossier temporaire pendant les tests).
+            var fallbackConf = OpticombatDataRoots.LocalFile(Path.Combine("clamav", "freshclam.conf"));
 
             return FreshclamConfSupport.EnsureWritableConf(
                 fallbackConf,
@@ -562,9 +565,7 @@ namespace optiCombat.Services
             }
             catch
             {
-                var fallbackDir = Path.Combine(
-                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                    "optiCombat", "logs");
+                var fallbackDir = Path.GetDirectoryName(OpticombatDataRoots.LocalFile(Path.Combine("logs", "freshclam.log")))!;
                 try { Directory.CreateDirectory(fallbackDir); } catch { /* approche prudente */ }
                 return Path.Combine(fallbackDir, "freshclam.log");
             }
@@ -657,9 +658,7 @@ namespace optiCombat.Services
             if (tryDeploy(_certsDir))
                 return;
 
-            var fallback = Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "optiCombat", "clamav", "cvd-certs");
+            var fallback = Path.GetDirectoryName(OpticombatDataRoots.LocalFile(Path.Combine("clamav", "cvd-certs", "clamav.crt")))!;
 
             if (!tryDeploy(fallback))
                 await TryDownloadClamAvRootCertAsync(fallback, ct).ConfigureAwait(false);
@@ -676,14 +675,18 @@ namespace optiCombat.Services
             SurSortieFreshclam(UiLogText.Warn(LocalizationService.GetString("Freshclam_LogCvdCertMissing")));
         }
 
-        private static async Task TryDownloadClamAvRootCertAsync(string destDir, CancellationToken ct)
+        private async Task TryDownloadClamAvRootCertAsync(string destDir, CancellationToken ct)
         {
             try
             {
                 Directory.CreateDirectory(destDir);
-                using var http = new HttpClient { Timeout = TimeSpan.FromSeconds(25) };
-                http.DefaultRequestHeaders.TryAddWithoutValidation("User-Agent", ProductVersionInfo.HttpUserAgent);
-                var bytes = await http.GetByteArrayAsync(ClamAvRootCertUri, ct).ConfigureAwait(false);
+                using var owned = CertificateHttpOverride is null ? new HttpClient { Timeout = TimeSpan.FromSeconds(25) } : null;
+                var http = CertificateHttpOverride ?? owned!;
+                using var request = new HttpRequestMessage(HttpMethod.Get, ClamAvRootCertUri);
+                request.Headers.TryAddWithoutValidation("User-Agent", ProductVersionInfo.HttpUserAgent);
+                using var response = await http.SendAsync(request, ct).ConfigureAwait(false);
+                response.EnsureSuccessStatusCode();
+                var bytes = await response.Content.ReadAsByteArrayAsync(ct).ConfigureAwait(false);
                 if (bytes.Length < 256) return;
                 var path = Path.Combine(destDir, "clamav.crt");
                 await File.WriteAllBytesAsync(path, bytes, ct).ConfigureAwait(false);

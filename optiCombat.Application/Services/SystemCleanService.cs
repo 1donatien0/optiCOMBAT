@@ -29,7 +29,7 @@ public sealed record CleanSelection
     /// <summary>Historique de navigation des navigateurs Chromium (Edge, Chrome, Brave, Opera, Vivaldi, Arc).</summary>
     public bool History { get; init; }
 
-    public bool AnySelected => TempWin || TempUser || Recycle || Logs || WUCache || Dns
+    public bool AnySelected => TempWin || TempUser || Recycle || Logs || WUCache || Dns || History
         || Edge || Chrome || Firefox || Brave || Opera || Vivaldi || Arc;
 }
 
@@ -54,14 +54,36 @@ public sealed record CleanAnalysisResult(
 
 public sealed record CleanExecutionResult(long BytesFreed, IReadOnlyList<string> LogLines);
 
+/// <summary>Racines des dossiers nettoyés (remplaçables en test : aucun test ne touche les vrais caches).</summary>
+internal sealed record CleanRoots(string LocalApp, string Roaming, string SystemRoot, string UserTemp)
+{
+    public static CleanRoots FromEnvironment() => new(
+        Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+        Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData),
+        Environment.GetEnvironmentVariable("SystemRoot") ?? @"C:\Windows",
+        Path.GetTempPath());
+}
+
 [SupportedOSPlatform("windows")]
 public static class SystemCleanService
 {
+    /// <summary>Tests uniquement : racines factices (<c>null</c> = environnement réel).</summary>
+    internal static CleanRoots? RootsOverride { get; set; }
+
+    /// <summary>Tests uniquement : remplace la corbeille, le script élevé Windows Update et le vidage DNS.</summary>
+    internal static Action? EmptyRecycleBinOverride { get; set; }
+
+    internal static Func<IReadOnlyList<string>, bool>? ElevatedBatchOverride { get; set; }
+
+    internal static Func<bool>? FlushDnsOverride { get; set; }
+
+    private static CleanRoots Roots => RootsOverride ?? CleanRoots.FromEnvironment();
+
     public static CleanAnalysisResult Analyze(CleanSelection sel)
     {
         return new CleanAnalysisResult(
             sel.TempWin ? MeasureDir(WindowsTempPath()) : 0,
-            sel.TempUser ? MeasureDir(Path.GetTempPath()) : 0,
+            sel.TempUser ? MeasureDir(Roots.UserTemp) : 0,
             sel.Logs ? MeasureDir(WindowsLogsPath()) : 0,
             sel.Edge ? MeasureDir(EdgeCachePath()) : 0,
             sel.Chrome ? MeasureDir(ChromeCachePath()) : 0,
@@ -93,13 +115,17 @@ public static class SystemCleanService
         }
         if (sel.TempUser)
         {
-            long f = CleanDir(Path.GetTempPath());
+            long f = CleanDir(Roots.UserTemp);
             freed += f;
             Log(LocalizationService.Format("Clean_LogFreedTempUser", ByteSizeFormat.Format(f)));
         }
         if (sel.Recycle)
         {
-            SHEmptyRecycleBin(IntPtr.Zero, null, 0x0007);
+            // Le code retour est ignoré : une corbeille déjà vide renvoie aussi une erreur.
+            if (EmptyRecycleBinOverride is { } emptyBin)
+                emptyBin();
+            else
+                SHEmptyRecycleBin(IntPtr.Zero, null, 0x0007);
             Log(LocalizationService.GetString("Clean_LogRecycleEmptied"));
         }
         if (sel.Edge)
@@ -154,8 +180,9 @@ public static class SystemCleanService
         {
             // Arrêt du service Windows Update nécessaire → script administrateur (une invite UAC).
             long before = MeasureDir(WindowsUpdateCachePath());
-            var ok = SystemTweaksService.RunElevatedBatch(
-                SystemTweaksService.ElevatedWindowsUpdateCacheCommands(), waitForExit: true);
+            var commands = SystemTweaksService.ElevatedWindowsUpdateCacheCommands().ToList();
+            var ok = ElevatedBatchOverride?.Invoke(commands)
+                ?? SystemTweaksService.RunElevatedBatch(commands, waitForExit: true);
             if (ok)
             {
                 long f = Math.Max(0, before - MeasureDir(WindowsUpdateCachePath()));
@@ -167,7 +194,7 @@ public static class SystemCleanService
                 Log(LocalizationService.GetString("Clean_LogWUDenied"));
             }
         }
-        if (sel.Dns && SystemTweaksService.FlushDnsCache())
+        if (sel.Dns && (FlushDnsOverride?.Invoke() ?? SystemTweaksService.FlushDnsCache()))
             Log(LocalizationService.GetString("Clean_LogDnsFlushed"));
         if (sel.History)
         {
@@ -205,18 +232,18 @@ public static class SystemCleanService
         return parts.Count == 0 ? "—" : string.Join(", ", parts);
     }
 
-    private static string LocalApp => Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData);
-    private static string WindowsTempPath() => Path.Combine(Environment.GetEnvironmentVariable("SystemRoot") ?? @"C:\Windows", "Temp");
-    private static string WindowsLogsPath() => Path.Combine(Environment.GetEnvironmentVariable("SystemRoot") ?? @"C:\Windows", "Logs");
-    private static string EdgeCachePath() => Path.Combine(LocalApp, @"Microsoft\Edge\User Data\Default\Cache");
-    private static string ChromeCachePath() => Path.Combine(LocalApp, @"Google\Chrome\User Data\Default\Cache");
-    private static string BraveCachePath() => Path.Combine(LocalApp, @"BraveSoftware\Brave-Browser\User Data\Default\Cache");
-    private static string OperaCachePath() => Path.Combine(LocalApp, @"Opera Software\Opera Stable\Cache");
-    private static string VivaldiCachePath() => Path.Combine(LocalApp, @"Vivaldi\User Data\Default\Cache");
-    private static string ArcCachePath() => Path.Combine(LocalApp, @"Arc\User Data\Default\Cache");
+    private static string LocalApp => Roots.LocalApp;
+    private static string WindowsTempPath() => Path.Combine(Roots.SystemRoot, "Temp");
+    private static string WindowsLogsPath() => Path.Combine(Roots.SystemRoot, "Logs");
+    private static string EdgeCachePath() => Path.Combine(LocalApp, "Microsoft", "Edge", "User Data", "Default", "Cache");
+    private static string ChromeCachePath() => Path.Combine(LocalApp, "Google", "Chrome", "User Data", "Default", "Cache");
+    private static string BraveCachePath() => Path.Combine(LocalApp, "BraveSoftware", "Brave-Browser", "User Data", "Default", "Cache");
+    private static string OperaCachePath() => Path.Combine(LocalApp, "Opera Software", "Opera Stable", "Cache");
+    private static string VivaldiCachePath() => Path.Combine(LocalApp, "Vivaldi", "User Data", "Default", "Cache");
+    private static string ArcCachePath() => Path.Combine(LocalApp, "Arc", "User Data", "Default", "Cache");
 
     private static string WindowsUpdateCachePath() =>
-        Path.Combine(Environment.GetEnvironmentVariable("SystemRoot") ?? @"C:\Windows", @"SoftwareDistribution\Download");
+        Path.Combine(Roots.SystemRoot, "SoftwareDistribution", "Download");
 
     // Historique de navigation (Chromium uniquement) : fichiers « History » du dossier profil (parent du Cache).
     // Firefox est exclu : places.sqlite contient aussi les favoris.
@@ -284,7 +311,7 @@ public static class SystemCleanService
 
     private static string FirefoxCachePath()
     {
-        var localProfilesBase = Path.Combine(LocalApp, @"Mozilla\Firefox\Profiles");
+        var localProfilesBase = Path.Combine(LocalApp, "Mozilla", "Firefox", "Profiles");
         if (!Directory.Exists(localProfilesBase))
             return string.Empty;
 
@@ -300,8 +327,7 @@ public static class SystemCleanService
                 return cache;
         }
 
-        var roaming = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
-        var profilesIni = Path.Combine(roaming, @"Mozilla\Firefox\profiles.ini");
+        var profilesIni = Path.Combine(Roots.Roaming, "Mozilla", "Firefox", "profiles.ini");
         if (!File.Exists(profilesIni))
             return string.Empty;
 

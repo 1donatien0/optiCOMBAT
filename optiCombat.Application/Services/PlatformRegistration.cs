@@ -12,20 +12,27 @@ public static class PlatformRegistration
     private const string AmsiProviderGuid = "{A8F4E2B1-9C3D-4E5F-8A7B-1C2D3E4F5A6B}";
     private const string AmsiProviderName = "optiCombat AMSI Provider";
 
+    /// <summary>Tests uniquement : dossier des binaires livrés et dossier des pilotes.</summary>
+    internal static string? BaseDirectoryOverride { get; set; }
+
+    internal static string? DriversDirectoryOverride { get; set; }
+
+    private static string BaseDirectory => BaseDirectoryOverride ?? AppDomain.CurrentDomain.BaseDirectory;
+
     public static void TryRegisterAmsiProvider()
     {
         try
         {
-            var dll = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "optiCombat.AmsiProvider.dll");
+            var dll = Path.Combine(BaseDirectory, "optiCombat.AmsiProvider.dll");
             if (!File.Exists(dll))
             {
                 AppLogger.Warn("PlatformRegistration", "optiCombat.AmsiProvider.dll absent — AMSI non enregistré");
                 return;
             }
 
-            using var key = Registry.LocalMachine.CreateSubKey($@"SOFTWARE\Microsoft\AMSI\Providers\{AmsiProviderGuid}");
-            key?.SetValue(string.Empty, AmsiProviderName);
-            key?.SetValue("Path", dll, RegistryValueKind.String);
+            var subKey = $@"SOFTWARE\Microsoft\AMSI\Providers\{AmsiProviderGuid}";
+            SystemShell.Current.SetLocalMachineValue(subKey, string.Empty, AmsiProviderName, RegistryValueKind.String);
+            SystemShell.Current.SetLocalMachineValue(subKey, "Path", dll, RegistryValueKind.String);
             AppLogger.Info("PlatformRegistration", "Fournisseur AMSI enregistré");
         }
         catch (Exception ex)
@@ -38,14 +45,14 @@ public static class PlatformRegistration
     {
         try
         {
-            var sys = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "optiCombat.Minifilter.sys");
+            var sys = Path.Combine(BaseDirectory, "optiCombat.Minifilter.sys");
             if (!File.Exists(sys))
             {
                 AppLogger.Warn("PlatformRegistration", "optiCombat.Minifilter.sys absent — minifilter non chargé");
                 return;
             }
 
-            var dest = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers", "optiCombat.Minifilter.sys");
+            var dest = Path.Combine(DriversDirectoryOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers"), "optiCombat.Minifilter.sys");
             if (!File.Exists(dest))
                 File.Copy(sys, dest, overwrite: true);
 
@@ -63,15 +70,12 @@ public static class PlatformRegistration
         try { RunProcess("fltmc.exe", "unload optiCombatMinifilter"); } catch { }
     }
 
-    private static void RunProcess(string file, string args)
-    {
-        using var proc = Process.Start(new ProcessStartInfo
+    private static void RunProcess(string file, string args) =>
+        SystemShell.Current.Run(new ProcessStartInfo
         {
             FileName = file,
             Arguments = args,
             UseShellExecute = false,
             CreateNoWindow = true,
-        });
-        proc?.WaitForExit(15_000);
-    }
+        }, 15_000);
 }

@@ -38,7 +38,7 @@ optiCOMBAT est conçu pour **fonctionner à côté de Windows Defender**, pas po
 - Analyse rapide, complète ou personnalisée, d’un fichier ou d’un dossier
 - « Scanner avec optiCombat » dans le menu contextuel de l’Explorateur
 - ClamAV et YARA en parallèle, avec mise à jour automatique des signatures et des règles YARA-Forge
-- Cœur Rust optionnel (`opticombat.dll`), désactivé par défaut : Options → « Cœur natif Rust (expérimental) »
+- Cœur Rust optionnel (`opticombat_engine.dll`), désactivé par défaut : Options → « Cœur natif Rust (expérimental) »
 - Protection en temps réel en mode utilisateur et surveillance des processus
 - Analyse automatique des clés USB et cartes SD, et analyse planifiée
 - Quarantaine chiffrée (AES-GCM), avec restauration et suppression
@@ -86,7 +86,7 @@ Une mise à jour remplace l’application dans le même dossier. L’historique,
 optiCombat.exe              interface WinUI 3 (.NET 8)
     ├── ClamAV              clamd, ou clamscan en repli
     ├── YARA                règles, dont YARA-Forge
-    └── opticombat.dll      cœur Rust optionnel, désactivé par défaut
+    └── opticombat_engine.dll      cœur Rust optionnel, désactivé par défaut
           ├── reputation    listes de hashes ; MalwareBazaarDb si l'appelant charge un CSV
           ├── yara-engine   règles YARA locales
           ├── heuristics    PE, ML
@@ -96,7 +96,7 @@ Couche plateforme           service Windows, AMSI, minifiltre
                             livrée avec le produit, inactive
 ```
 
-Le shell ne télécharge ni MalwareBazaar, ni URLhaus, ni ThreatFox. Le cœur Rust ne fait aucun appel réseau. `Dispatcher::new` laisse le moteur IOC vide.
+Avec une Auth-Key abuse.ch saisie dans les Options (compte gratuit ; exigée par abuse.ch depuis le 30 juin 2025), le shell télécharge les exports MalwareBazaar, URLhaus et ThreatFox toutes les 12 heures (6 heures minimum) dans `%LOCALAPPDATA%\optiCombat\threat_intel`, puis le moteur natif les charge via `opticombat_load_threat_intel`. Sans clé, le moteur IOC reste vide. Le cœur Rust lui-même ne fait aucun appel réseau.
 
 Le guide technique couvre l’architecture, le modèle de sécurité, la compilation et la publication : **[docs/GUIDE_COMPLET.md](docs/GUIDE_COMPLET.md)**.
 
@@ -114,7 +114,7 @@ dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
 
 Il faut Windows 10 ou 11 x64, le SDK .NET 8 et Rust. La compilation de l’installateur demande aussi Inno Setup 6. Détail : [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Publication complète (tests, publish, `opticombat.dll`, installateur) :
+Publication complète (tests, publish, `opticombat_engine.dll`, installateur) :
 
 ```powershell
 .\scripts\prepare-release.ps1
@@ -135,9 +135,9 @@ Publication complète (tests, publish, `opticombat.dll`, installateur) :
 
 ## Qualité
 
-Tests unitaires Release (xUnit) : **618 / 618** verts, ViewModels du shell inclus. Couverture de lignes **66,4 %** — plancher CI **62 %**, cible **65 %**.
+Tests unitaires Release (xUnit) : **943** tests, ViewModels du shell inclus. Aucun test ne touche le poste : les outils externes (winget, freshclam, clamscan, YARA, schtasks, clamd) sont remplacés par un exécutable factice ; processus et registre (tweaks, exclusions Defender, `sc.exe`, relance UAC, langue, démarrage automatique, menu contextuel) passent par un `ISystemShell` enregistreur ; toute l’exécution est redirigée vers un `%APPDATA%` / `%LOCALAPPDATA%` temporaire. Plancher CI de couverture de lignes **85 %**, cible **90 %**. Dernière mesure Linux : **87,1 %** des lignes (10 393 / 11 939) et **80,5 %** des branches, où 16 tests réservés à Windows ne tournent pas. Sur Windows, avec les mêmes réglages coverlet que la CI, les **943** tests passent : **89,8 %** des lignes (10 724 / 11 939) et **84,3 %** des branches. Le plancher de 85 % est tenu, la cible de 90 % non.
 
-Rust : **108** fonctions `#[test]` exécutées par `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Trois tests Windows restent derrière la feature `windows-platform`. Couverture de lignes d’au moins **65 %** (`cargo llvm-cov`, cible 75 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
+Rust : **170** fonctions `#[test]` exécutées par `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Trois tests Windows restent derrière la feature `windows-platform`. Couverture de lignes mesurée **92,6 %**, plancher CI **90 %** (`cargo llvm-cov`, cible 95 %), plus `cargo clippy -D warnings` et `cargo fmt --check`.
 
 La CI lance les tests C# et Rust, CodeQL, Gitleaks, Dependency Review et Dependabot.
 

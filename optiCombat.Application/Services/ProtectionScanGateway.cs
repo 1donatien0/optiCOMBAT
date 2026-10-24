@@ -44,25 +44,39 @@ public sealed class ProtectionScanGateway
     /// <summary>Scan via service-host IPC si disponible, sinon orchestrateur local.</summary>
     public async Task<ScanResult> ScanFileAsync(string filePath, CancellationToken ct = default)
     {
-        if (ShouldPreferRemoteScan() && await TryScanViaIpcAsync(filePath, ct).ConfigureAwait(false) is { } ipc)
-            return ipc;
+        if (ShouldPreferRemoteScan())
+        {
+            if (await TryScanViaIpcAsync(filePath, ct).ConfigureAwait(false) is { } ipc)
+                return ipc;
+            _lastIpcFailureUtc = DateTime.UtcNow;
+        }
 
         return await _orchestrator.ScanFileAsync(filePath, ct: ct).ConfigureAwait(false);
     }
 
+    /// <summary>
+    /// L'IPC n'est tenté que si le service de protection est activé. Avant, chaque scan RTP /
+    /// processus / USB sondait le tube même service désactivé (cas de toutes les installations :
+    /// le service est livré inactif) — et sous Windows, une connexion à un tube inexistant
+    /// réessaie jusqu'au délai : jusqu'à 5 s d'attente par fichier avant le scan local.
+    /// </summary>
     private bool ShouldPreferRemoteScan()
     {
-        if (IsServiceHostProcess)
+        if (IsServiceHostProcess || !_prefs.Current.UsePlatformProtectionService)
             return false;
 
-        if (_prefs.Current.UsePlatformProtectionService)
-        {
-            PlatformProtectionBootstrap.EnsurePlatformProtectionRunning();
-            return true;
-        }
+        // Service activé mais injoignable il y a peu : pas de nouvelle tentative à chaque fichier.
+        if (DateTime.UtcNow - _lastIpcFailureUtc < IpcRetryBackoff)
+            return false;
 
-        return IsRemoteEngineReachable();
+        PlatformProtectionBootstrap.EnsurePlatformProtectionRunning();
+        return true;
     }
+
+    private DateTime _lastIpcFailureUtc = DateTime.MinValue;
+
+    /// <summary>Délai avant une nouvelle tentative IPC après un échec.</summary>
+    internal static TimeSpan IpcRetryBackoff { get; set; } = TimeSpan.FromSeconds(30);
 
     private static async Task<ScanResult?> TryScanViaIpcAsync(string filePath, CancellationToken ct)
     {

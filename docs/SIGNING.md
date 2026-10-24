@@ -6,7 +6,7 @@
 |-----------|------------|
 | `optiCombat.exe` | Authenticode |
 | `optiCombat.Service.exe` | Authenticode |
-| `opticombat.dll` | Authenticode |
+| `opticombat_engine.dll` | Authenticode |
 | `optiCombat.AmsiProvider.dll` | Authenticode |
 | `optiCombat.Minifilter.sys` | Attestation Microsoft (couche plateforme inactive en v1.0) |
 

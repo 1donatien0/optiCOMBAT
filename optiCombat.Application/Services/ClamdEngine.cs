@@ -13,14 +13,29 @@ namespace optiCombat.Services
         private readonly object _parseLock = new();
         private readonly IUserPreferencesAccessor _prefs;
         private readonly IExclusionSettingsAccessor _exclusions;
+        private readonly Func<CancellationToken, Task<bool>>? _ensureReady;
+        private readonly Func<ClamdClient> _clientFactory;
 
         public ClamdEngine(
             IUserPreferencesAccessor? preferences = null,
             IExclusionSettingsAccessor? exclusions = null)
+            : this(preferences, exclusions, null, () => new ClamdClient(), new ClamAvEngine())
+        {
+        }
+
+        /// <summary>Constructeur de test : démon (disponibilité) et client clamd injectés.</summary>
+        internal ClamdEngine(
+            IUserPreferencesAccessor? preferences,
+            IExclusionSettingsAccessor? exclusions,
+            Func<CancellationToken, Task<bool>>? ensureReady,
+            Func<ClamdClient> clientFactory,
+            ClamAvEngine fallbackProbe)
         {
             _prefs = preferences ?? new DefaultUserPreferencesAccessor();
             _exclusions = exclusions ?? new DefaultExclusionSettingsAccessor();
-            _fallbackProbe = new ClamAvEngine();
+            _ensureReady = ensureReady;
+            _clientFactory = clientFactory;
+            _fallbackProbe = fallbackProbe;
         }
 
         /// <summary>Dernier mode utilisé (diagnostic UI).</summary>
@@ -32,6 +47,8 @@ namespace optiCombat.Services
         {
             if (!_prefs.Current.UseClamdEngine)
                 return false;
+            if (_ensureReady != null)
+                return await _ensureReady(ct).ConfigureAwait(false);
             if (!ClamdHost.Shared.IsBinaryPresent)
                 return false;
             return await ClamdHost.Shared.EnsureRunningAsync(ct).ConfigureAwait(false);
@@ -139,7 +156,7 @@ namespace optiCombat.Services
 
             try
             {
-                using var client = new ClamdClient();
+                using var client = _clientFactory();
                 string output = recursive
                     ? await client.ScanRecursiveAsync(targetPath, ct).ConfigureAwait(false)
                     : await client.ScanFileAsync(targetPath, ct).ConfigureAwait(false);

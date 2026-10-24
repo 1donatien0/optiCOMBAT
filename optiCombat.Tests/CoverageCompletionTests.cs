@@ -1,3 +1,4 @@
+using optiCombat.Tests.TestSupport;
 using optiCombat.Localization;
 using optiCombat.Models;
 using optiCombat.Services;
@@ -101,22 +102,6 @@ public sealed class CoverageCompletionTests : IDisposable
         Assert.StartsWith(UiLogText.InfoPrefix, UiLogText.Info("x"));
         Assert.Contains("n", UiLogText.ReadyLine("n"));
         Assert.Contains("n", UiLogText.MissingLine("n"));
-    }
-
-    [Fact]
-    public void ClamdConfSupport_writes_conf_with_excludes()
-    {
-        var db = Path.Combine(_root, "db");
-        Directory.CreateDirectory(db);
-        ClamdConfSupport.EnsureConf(db, new[] { "skip", " ", "also" });
-        Assert.True(File.Exists(ClamdConfSupport.GetConfPath()));
-        var text = File.ReadAllText(ClamdConfSupport.GetConfPath());
-        Assert.Contains("TCPSocket " + ClamdConfSupport.DefaultTcpPort, text);
-        Assert.Contains("ExcludePath skip", text);
-        Assert.DoesNotContain("ExcludePath  ", text);
-        Assert.False(string.IsNullOrWhiteSpace(ClamdConfSupport.GetPidPath()));
-        Assert.False(string.IsNullOrWhiteSpace(ClamdConfSupport.GetLogPath()));
-        ClamdConfSupport.EnsureConf(db);
     }
 
     [Fact]
@@ -319,20 +304,28 @@ public sealed class CoverageCompletionTests : IDisposable
     [Fact]
     public void ShellContextMenuSupport_writes_current_user_keys()
     {
+        // Enregistreur : l'ancien test écrivait puis SUPPRIMAIT le vrai menu contextuel du poste.
+        using var shell = RecordingShell.Install();
         LocalizationService.ApplyCulture("fr-FR");
         var name = LocalizationService.GetString("Shell_ScanWith");
-        var fileKey = @"Software\Classes\*\shell\" + name;
-        var dirKey = @"Software\Classes\Directory\shell\" + name;
+        ShellContextMenuSupport.ExecutablePathOverride = @"C:\Program Files\optiCombat\optiCombat.exe";
         try
         {
             ShellContextMenuSupport.ApplyForCurrentCulture();
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(fileKey);
-            Assert.NotNull(key);
         }
         finally
         {
-            try { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(fileKey, throwOnMissingSubKey: false); } catch { }
-            try { Microsoft.Win32.Registry.CurrentUser.DeleteSubKeyTree(dirKey, throwOnMissingSubKey: false); } catch { }
+            ShellContextMenuSupport.ExecutablePathOverride = null;
+        }
+
+        foreach (var root in new[] { @"Software\Classes\*\shell", @"Software\Classes\Directory\shell" })
+        {
+            Assert.Equal(@"C:\Program Files\optiCombat\optiCombat.exe,0",
+                shell.GetCurrentUserValue(root + "\\" + name, "Icon"));
+            Assert.Equal("\"C:\\Program Files\\optiCombat\\optiCombat.exe\" --scan \"%1\"",
+                shell.GetCurrentUserValue(root + "\\" + name + "\\command", string.Empty));
+            Assert.Contains(root + "\\Scanner avec optiCombat", shell.DeletedTrees);
+            Assert.Contains(root + "\\Scan with optiCombat", shell.DeletedTrees);
         }
     }
 }

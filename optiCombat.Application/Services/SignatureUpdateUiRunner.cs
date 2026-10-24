@@ -15,10 +15,11 @@ namespace optiCombat.Services
             FreshclamUpdater? freshclam,
             YaraForgeUpdater? rules,
             Action<string> appendLog,
-            CancellationToken cancellationToken = default)
+            CancellationToken cancellationToken = default,
+            ThreatIntelFeedUpdater? threatIntel = null)
         {
             return await SignatureUpdateCoordinator.RunFullSignatureUpdateAsync(
-                freshclam, rules, appendLog, cancellationToken).ConfigureAwait(false);
+                freshclam, rules, appendLog, cancellationToken, threatIntel).ConfigureAwait(false);
         }
     }
 }

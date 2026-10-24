@@ -8,20 +8,15 @@ namespace optiCombat.Services
     {
         public const int DefaultTcpPort = 3310;
 
+        // %LocalAppData%\optiCombat\clamd\… (redirigé vers un dossier temporaire pendant les tests).
         public static string GetConfPath() =>
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "optiCombat", "clamd", "clamd.conf");
+            OpticombatDataRoots.LocalFile(Path.Combine("clamd", "clamd.conf"));
 
         public static string GetPidPath() =>
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "optiCombat", "clamd", "clamd.pid");
+            OpticombatDataRoots.LocalFile(Path.Combine("clamd", "clamd.pid"));
 
         public static string GetLogPath() =>
-            Path.Combine(
-                Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-                "optiCombat", "clamd", "clamd.log");
+            OpticombatDataRoots.LocalFile(Path.Combine("clamd", "clamd.log"));
 
         public static void EnsureConf(string databaseDir, IEnumerable<string>? excludePatterns = null)
         {

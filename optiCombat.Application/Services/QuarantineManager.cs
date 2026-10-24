@@ -70,31 +70,10 @@ namespace optiCombat.Services
             DirectoryHardening.HardenDataDirectory(_quarantineDir);
             _masterKey = LoadOrCreateMasterKey();
             _doc = LoadManifest();
-            MigrateUnsignedManifestIfNeeded();
             _ = Task.Run(EnsureQuarantineBlobLayout);
         }
 
         public void BindActivityLog(ActivityLogService activityLog) => _activityLog = activityLog;
-
-        /// <summary>
-        /// Un manifeste non signé contenant des entrées est toujours rejeté, quelle que soit sa version.
-        /// <para>
-        /// Audit 360 : un manifeste « v1 » non signé était auparavant accepté puis <b>signé
-        /// automatiquement</b> au démarrage — n'importe quel processus de l'utilisateur pouvait donc
-        /// forger des entrées (chemin de restauration arbitraire, blob XOR non authentifié) que l'outil
-        /// de restauration administrateur aurait ensuite écrites vers System32.
-        /// </para>
-        /// </summary>
-        private void MigrateUnsignedManifestIfNeeded()
-        {
-            if (!string.IsNullOrEmpty(_doc.Hmac) || _doc.Entries.Count == 0)
-                return;
-
-            AppLogger.Fatal("QuarantineManager", "Manifeste sans HMAC — entrées ignorées (copie conservée)");
-            PreserveRejectedFile(_manifestPath);
-            _doc = new QuarantineDocument { Version = 2 };
-            SaveManifest();
-        }
 
         /// <summary>Copie un fichier rejeté à côté de l'original pour analyse / récupération manuelle.</summary>
         private static void PreserveRejectedFile(string path)
@@ -261,7 +240,33 @@ namespace optiCombat.Services
                     fs.Flush(flushToDisk: true);
                 }
 
-                // 5. Suppression du fichier original (après écriture confirmée).
+                // 5. Entrée enregistrée AVANT de supprimer l'original : si le manifeste ne peut pas
+                //    être écrit, l'original est encore là et seul le blob est retiré. (L'ordre inverse
+                //    perdait le fichier : original supprimé, puis blob supprimé au rollback.)
+                var entry = new QuarantineEntry
+                {
+                    Id = id,
+                    OriginalPath = threat.FilePath,
+                    QuarantinePath = qPath,
+                    VirusName = threat.VirusName,
+                    QuarantinedAt = DateTime.Now,
+                    OriginalSize = threat.FileSize,
+                    Sha256 = Convert.ToHexString(sha256),
+                    SourceSessionId = sourceSessionId != Guid.Empty ? sourceSessionId : null,
+                };
+                lock (_lock)
+                {
+                    _doc.Entries.Add(entry);
+                    if (!TrySaveManifest())
+                    {
+                        _doc.Entries.Remove(entry);
+                        TryDeleteBlob(qPath);
+                        CryptographicOperations.ZeroMemory(plaintext);
+                        return false;
+                    }
+                }
+
+                // 6. Suppression du fichier original (blob et manifeste confirmés).
                 try
                 {
                     File.Delete(threat.FilePath);
@@ -270,37 +275,22 @@ namespace optiCombat.Services
                 {
                     AppLogger.Warn("QuarantineManager",
                         $"Suppression originale échouée après quarantaine ({threat.FilePath})", ex);
-                    try { File.Delete(qPath); } catch { /* rollback blob */ }
+                    lock (_lock)
+                    {
+                        _doc.Entries.Remove(entry);
+                        SaveManifest();
+                    }
+                    TryDeleteBlob(qPath);
+                    CryptographicOperations.ZeroMemory(plaintext);
                     return false;
                 }
 
                 threat.Status = ThreatStatus.Quarantined;
                 threat.QuarantinePath = qPath;
-
                 lock (_lock)
-                {
-                    var entry = new QuarantineEntry
-                    {
-                        Id = id,
-                        OriginalPath = threat.FilePath,
-                        QuarantinePath = qPath,
-                        VirusName = threat.VirusName,
-                        QuarantinedAt = DateTime.Now,
-                        OriginalSize = threat.FileSize,
-                        Sha256 = Convert.ToHexString(sha256),
-                        SourceSessionId = sourceSessionId != Guid.Empty ? sourceSessionId : null,
-                    };
-                    _doc.Entries.Add(entry);
-                    if (!TrySaveManifest())
-                    {
-                        _doc.Entries.Remove(entry);
-                        try { File.Delete(qPath); } catch { /* best effort */ }
-                        return false;
-                    }
                     _activityLog?.RecordThreatQuarantined(entry, sourceSessionId);
-                }
 
-                // 6. Wipe du plaintext en RAM (réduit la fenêtre d'exposition mémoire).
+                // 7. Wipe du plaintext en RAM (réduit la fenêtre d'exposition mémoire).
                 CryptographicOperations.ZeroMemory(plaintext);
 
                 return true;
@@ -310,6 +300,12 @@ namespace optiCombat.Services
                 AppLogger.Error("QuarantineManager", $"Quarantine échec ({threat.FilePath})", ex);
                 return false;
             }
+        }
+
+        private static void TryDeleteBlob(string qPath)
+        {
+            try { File.Delete(qPath); }
+            catch (Exception ex) { AppLogger.Warn("QuarantineManager", $"Retrait du blob ({qPath})", ex); }
         }
 
         public int QuarantineAll(IEnumerable<ThreatInfo> threats, Guid sourceSessionId = default)
@@ -754,7 +750,36 @@ namespace optiCombat.Services
         /// Si la signature ne correspond pas, on log et on retourne un manifest vide
         /// — refus de charger un manifest manipulé.
         /// </summary>
+        /// <remarks>
+        /// Un manifeste non signé contenant des entrées est toujours rejeté, quelle que soit sa
+        /// version (audit 360 : un « v1 » non signé était auparavant auto-signé au démarrage, donc
+        /// forgeable par n'importe quel processus de l'utilisateur).
+        /// <para>
+        /// Un manifeste rejeté (HMAC invalide, non signé, JSON corrompu, ou clé maîtresse régénérée
+        /// après un échec DPAPI) est copié à côté avant tout enregistrement : sans cela, les deux
+        /// enregistrements suivants écrasaient le manifeste puis son <c>.bak</c>, et les entrées
+        /// devenaient irrécupérables même en restaurant l'ancienne clé.
+        /// </para>
+        /// </remarks>
         private QuarantineDocument LoadManifest()
+        {
+            var fallback = new QuarantineDocument();
+            var doc = ReadManifest(fallback);
+            if (ReferenceEquals(doc, fallback))
+            {
+                var hadManifest = File.Exists(_manifestPath);
+                var hadBackup = File.Exists(_manifestPath + ".bak");
+                if (hadManifest || hadBackup)
+                {
+                    AppLogger.Fatal("QuarantineManager", "Manifeste rejeté — copie conservée, quarantaine repartie à vide");
+                    PreserveRejectedFile(_manifestPath);
+                    PreserveRejectedFile(_manifestPath + ".bak");
+                }
+            }
+            return doc;
+        }
+
+        private QuarantineDocument ReadManifest(QuarantineDocument fallback)
         {
             return AtomicFile.ReadWithBackup(
                 _manifestPath,
@@ -783,7 +808,7 @@ namespace optiCombat.Services
 
                     return doc;
                 },
-                fallbackValue: new QuarantineDocument());
+                fallbackValue: fallback);
         }
 
         private bool TrySaveManifest()

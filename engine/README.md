@@ -13,7 +13,7 @@ Fichier → SHA-256 → base de hachage (reputation / MalwareBazaar)
         → verdict + score de confiance
 ```
 
-Les signatures ClamAV et les règles YARA sont mises à jour par le shell (`FreshclamUpdater`, `YaraForgeUpdater`). Les CSV MalwareBazaar, URLhaus et ThreatFox ne sont pas téléchargés par l'application : l'appelant les charge en mémoire. Sans ce chargement, `Dispatcher::new` laisse le moteur IOC vide. Le cœur Rust ne fait aucun appel réseau. L'étape IOC ne concerne que les scripts et les fichiers de type inconnu.
+Les signatures ClamAV et les règles YARA sont mises à jour par le shell (`FreshclamUpdater`, `YaraForgeUpdater`). Les exports MalwareBazaar, URLhaus et ThreatFox sont téléchargés par le shell (`ThreatIntelFeedUpdater`, Auth-Key abuse.ch obligatoire) dans un dossier que le moteur charge via `ThreatIntelBundle::load_dir` : `Dispatcher::new` lit `OPTICOMBAT_THREAT_INTEL_DIR`, `Dispatcher::with_threat_intel_dir` un dossier explicite, la FFI expose `opticombat_load_threat_intel(dir)` et `opticombat_threat_intel_stats()`, la CLI `--intel <dossier>`. Fichiers reconnus : `malwarebazaar.csv`, `malwarebazaar_sha256.txt`, `urlhaus.csv`, `urlhaus.txt`, `threatfox.csv` (512 Mio max par fichier, 2 millions d'entrées max par flux). Sans dossier, le moteur IOC reste vide. Le cœur Rust ne fait aucun appel réseau. L'étape IOC ne concerne que les scripts et les fichiers de type inconnu.
 
 ## Crates
 
@@ -54,10 +54,10 @@ Cdylib FFI :
 
 ```bash
 cargo build -p opticombat-ffi --release
-# → target/release/opticombat.dll (Windows)
+# → target/release/opticombat_engine.dll (Windows)
 ```
 
-Déploiement Windows : `scripts/build-engine.ps1` copie `opticombat.dll` à côté de `optiCombat.exe` (sortie WinUI et publish) ; l’installateur l’embarque si elle existe.
+Déploiement Windows : `scripts/build-engine.ps1` copie `opticombat_engine.dll` à côté de `optiCombat.exe` (sortie WinUI et publish) ; l’installateur l’embarque si elle existe.
 
 En CI (`.github/workflows/ci.yml`) : `cargo test --workspace` sous Windows et `cargo audit` ; CodeQL analyse le code Rust. La feature `windows-platform` (DPAPI, `ReadProcessMemory`) n’est pas activée par défaut et n’est donc pas testée en CI.
 

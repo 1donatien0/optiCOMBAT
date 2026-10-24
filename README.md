@@ -38,7 +38,7 @@ optiCOMBAT is designed to **work alongside Windows Defender**, not to replace it
 - Quick, full, and custom scans, plus a file or a folder
 - “Scan with optiCombat” in the File Explorer context menu
 - ClamAV and YARA running in parallel, with automatic signature and YARA-Forge rule updates
-- Optional Rust core (`opticombat.dll`), off by default: Options → “Native Rust core (experimental)”
+- Optional Rust core (`opticombat_engine.dll`), off by default: Options → “Native Rust core (experimental)”
 - User-mode real-time protection and process monitoring
 - Automatic scan of USB drives and SD cards, and a scheduled scan
 - Encrypted quarantine (AES-GCM), with restore and delete
@@ -86,7 +86,7 @@ An upgrade replaces the app in the same folder. Scan history, quarantine, and pr
 optiCombat.exe              WinUI 3 shell (.NET 8)
     ├── ClamAV              clamd, or clamscan as a fallback
     ├── YARA                rules, including YARA-Forge
-    └── opticombat.dll      optional Rust core, off by default
+    └── opticombat_engine.dll      optional Rust core, off by default
           ├── reputation    hash lists; MalwareBazaarDb when a caller loads a CSV
           ├── yara-engine   local YARA rules
           ├── heuristics    PE analysis, ML classifier
@@ -96,7 +96,7 @@ Platform layer              Windows service, AMSI, minifilter
                             shipped with the product, inactive
 ```
 
-The shell does not download MalwareBazaar, URLhaus, or ThreatFox. The Rust core makes no network calls. `Dispatcher::new` leaves the IOC engine empty.
+With an abuse.ch Auth-Key set in Options (free account; required by abuse.ch since 30 June 2025), the shell downloads the MalwareBazaar, URLhaus and ThreatFox exports every 12 hours (6 hours minimum) into `%LOCALAPPDATA%\optiCombat\threat_intel`, then the native engine loads them through `opticombat_load_threat_intel`. Without a key the IOC engine stays empty. The Rust core itself makes no network calls.
 
 The technical guide covers architecture, the security model, the build, and the release process: **[docs/GUIDE_COMPLET.md](docs/GUIDE_COMPLET.md)**.
 
@@ -114,7 +114,7 @@ dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
 
 You need Windows 10 or 11 x64, the .NET 8 SDK, and Rust. The installer build also needs Inno Setup 6. Details: [CONTRIBUTING.md](CONTRIBUTING.md).
 
-Full release (tests, publish, `opticombat.dll`, installer):
+Full release (tests, publish, `opticombat_engine.dll`, installer):
 
 ```powershell
 .\scripts\prepare-release.ps1
@@ -135,9 +135,9 @@ Full release (tests, publish, `opticombat.dll`, installer):
 
 ## Quality
 
-Release unit tests (xUnit): **618 / 618** passing, including the shell view models. Line coverage **66.4%** — CI floor **62%**, target **65%**.
+Release unit tests (xUnit): **943** tests, including the shell view models. No test touches the machine: external tools (winget, freshclam, clamscan, YARA, schtasks, clamd) are replaced by a fake executable; processes and registry writes (tweaks, Defender exclusions, `sc.exe`, UAC relaunch, language, autostart, context menu) go through a recording `ISystemShell`; and the whole run is redirected to a temporary `%APPDATA%` / `%LOCALAPPDATA%`. CI line-coverage floor **85%**, target **90%**. Last Linux measurement: **87.1%** lines (10,393 / 11,939) and **80.5%** branches, where 16 Windows-only tests do not run. On Windows the same Release coverlet settings measure **89.8%** lines (10,724 / 11,939) and **84.3%** branches, with all **943** tests passing. That clears the 85% floor and stays under the 90% target.
 
-Rust: **108** `#[test]` functions run by `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Three Windows tests stay behind the `windows-platform` feature. Line coverage at least **65%** (`cargo llvm-cov`, target 75%), plus `cargo clippy -D warnings` and `cargo fmt --check`.
+Rust: **170** `#[test]` functions run by `cargo test --workspace --manifest-path engine/Cargo.toml`, plus 1 doctest (`extract_host`). Three Windows tests stay behind the `windows-platform` feature. Line coverage **92.6%** measured, CI floor **90%** (`cargo llvm-cov`, target 95%), plus `cargo clippy -D warnings` and `cargo fmt --check`.
 
 CI runs the C# and Rust tests, CodeQL, Gitleaks, Dependency Review, and Dependabot.
 

@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!--
+    Outil factice multiplateforme pour les tests : copié par les tests sous le nom d'un outil
+    externe (winget.exe, freshclam.exe, clamscan.exe, yara64.exe…) et piloté par un fichier de
+    scénario. Jamais livré (ni publié, ni embarqué par l'installateur).
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <AssemblyName>FakeTool</AssemblyName>
+    <RootNamespace>optiCombat.TestFakes</RootNamespace>
+    <IsPackable>false</IsPackable>
+    <IsPublishable>false</IsPublishable>
+    <InvariantGlobalization>true</InvariantGlobalization>
+  </PropertyGroup>
+
+</Project>

@@ -18,6 +18,60 @@ public sealed class ProtectionScanGatewayTests
         Assert.Equal("EICAR_Test", result.Threats[0].VirusName);
     }
 
+    [Theory]
+    [InlineData(null, "optiCombat")]
+    [InlineData("", "optiCombat")]
+    [InlineData("clamav", "clamav")]
+    [InlineData("MoteurInconnu", "MoteurInconnu")]
+    public void MapIpcResponse_maps_known_empty_and_unknown_engines(string? engine, string expected)
+    {
+        var result = ProtectionScanGateway.MapIpcResponse(
+            @"C:\temp\a.exe",
+            ProtectionPipeResponse.Threat("Win.Test", engine));
+        Assert.Equal(expected, Assert.Single(result.Threats).DetectedBy);
+    }
+
+    [Fact]
+    public void MapIpcResponse_error_and_nameless_hit_carry_no_threat()
+    {
+        var failed = ProtectionScanGateway.MapIpcResponse(
+            @"C:\temp\a.exe",
+            ProtectionPipeResponse.Error("hors service"));
+        Assert.Equal(ScanStatus.Error, failed.Status);
+        Assert.Equal("hors service", failed.ErrorMessage);
+        Assert.Empty(failed.Threats);
+
+        var nameless = ProtectionScanGateway.MapIpcResponse(
+            @"C:\temp\a.exe",
+            new ProtectionPipeResponse { Ok = true, Clean = false, ThreatName = "  " });
+        Assert.Equal(ScanStatus.Completed, nameless.Status);
+        Assert.Empty(nameless.Threats);
+    }
+
+    [Fact]
+    public async Task Disabled_platform_service_scans_locally_without_waiting_on_the_pipe()
+    {
+        // Régression : chaque scan RTP sondait le tube IPC (5 s de délai) même service désactivé.
+        var clam = new ThreatClamBackend();
+        var prefs = new TestSupport.FixedPreferencesAccessor(new UserPreferences { UsePlatformProtectionService = false });
+        var gateway = new ProtectionScanGateway(new ScanOrchestrator(clam, new FakeYaraBackend()), prefs);
+        var file = Path.GetTempFileName();
+        try
+        {
+            var watch = System.Diagnostics.Stopwatch.StartNew();
+            for (var i = 0; i < 3; i++)
+                await gateway.ScanFileAsync(file);
+            watch.Stop();
+
+            Assert.Equal(3, clam.ScanFileCalls);
+            Assert.True(watch.Elapsed < TimeSpan.FromSeconds(3), $"scan local trop lent : {watch.Elapsed}");
+        }
+        finally
+        {
+            File.Delete(file);
+        }
+    }
+
     [Fact]
     public async Task ScanFileAsync_falls_back_to_orchestrator_when_ipc_unavailable()
     {

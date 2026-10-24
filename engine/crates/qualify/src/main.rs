@@ -71,12 +71,21 @@ struct RunOptions {
 
 fn main() -> ExitCode {
     let args: Vec<String> = std::env::args().skip(1).collect();
+    ExitCode::from(run(
+        &args,
+        &mut std::io::stdout().lock(),
+        &mut std::io::stderr().lock(),
+    ))
+}
+
+const USAGE: &str = "usage: oc-qualify [--report path.json] [--manifest path.json] \
+       [--min-malicious-rate 0.85] [--max-fpr-rate 0.01] [files...]";
+
+/// Point d'entrée testable : renvoie le code de sortie (0 conforme, 1 échec, 2 usage).
+fn run(args: &[String], out: &mut dyn std::io::Write, err: &mut dyn std::io::Write) -> u8 {
     if args.is_empty() {
-        eprintln!(
-            "usage: oc-qualify [--report path.json] [--manifest path.json] \\
-       [--min-malicious-rate 0.85] [--max-fpr-rate 0.01] [files...]"
-        );
-        return ExitCode::from(2);
+        let _ = writeln!(err, "{USAGE}");
+        return 2;
     }
 
     let mut report_path: Option<PathBuf> = None;
@@ -113,10 +122,13 @@ fn main() -> ExitCode {
     }
 
     let expectations = if let Some(m) = manifest_path {
-        load_manifest(&m).unwrap_or_else(|e| {
-            eprintln!("manifest: {e}");
-            std::process::exit(2);
-        })
+        match load_manifest(&m) {
+            Ok(e) => e,
+            Err(e) => {
+                let _ = writeln!(err, "manifest: {e}");
+                return 2;
+            }
+        }
     } else {
         files
             .iter()
@@ -129,17 +141,19 @@ fn main() -> ExitCode {
     };
 
     let report = run_panel(&expectations, &options);
-    let json = serde_json::to_string_pretty(&report).unwrap();
-    if let Some(out) = report_path {
-        let _ = fs::write(out, &json);
+    let json = serde_json::to_string_pretty(&report).unwrap_or_default();
+    if let Some(path) = report_path {
+        if let Err(e) = fs::write(&path, &json) {
+            let _ = writeln!(err, "rapport {}: {e}", path.display());
+        }
     }
-    println!("{json}");
+    let _ = writeln!(out, "{json}");
 
     let thresholds_ok = report.thresholds.as_ref().is_none_or(|t| t.met);
     if report.failed > 0 || !thresholds_ok {
-        ExitCode::from(1)
+        1
     } else {
-        ExitCode::from(0)
+        0
     }
 }
 
@@ -278,6 +292,143 @@ mod tests {
         let _ = fs::remove_file(&eicar);
         assert!(report.passed >= 1, "{report:?}");
         assert_eq!(report.metrics.detection_rate, 1.0);
+    }
+
+    fn tmp(name: &str, data: &[u8]) -> PathBuf {
+        let p = std::env::temp_dir().join(format!("oc_q_{}_{name}", std::process::id()));
+        fs::write(&p, data).unwrap();
+        p
+    }
+
+    fn run_capture(args: &[String]) -> (u8, String, String) {
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let code = run(args, &mut out, &mut err);
+        (
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    #[test]
+    fn sans_argument_usage() {
+        let (code, _, err) = run_capture(&[]);
+        assert_eq!(code, 2);
+        assert!(err.contains("usage"));
+    }
+
+    #[test]
+    fn manifest_illisible_ou_invalide() {
+        let (code, _, err) = run_capture(&["--manifest".into(), "/oc/absent.json".into()]);
+        assert_eq!(code, 2);
+        assert!(err.starts_with("manifest:"));
+        let bad = tmp("bad.json", b"{pas du json");
+        let (code, _, _) = run_capture(&["--manifest".into(), bad.display().to_string()]);
+        assert_eq!(code, 2);
+        let _ = fs::remove_file(bad);
+    }
+
+    #[test]
+    fn manifest_complet_avec_rapport_et_seuils() {
+        // Pas d'EICAR ici : Defender peut le supprimer avant lecture sur la CI Windows.
+        let suspect = tmp("s.ps1", b"powershell -enc ZQ== ; Invoke-Expression $x");
+        let benign = tmp("ok.txt", b"texte banal");
+        let manifest = tmp(
+            "m.json",
+            serde_json::json!({
+                "samples": [
+                    {"path": suspect.display().to_string(), "expect": "suspicious", "label": "PS"},
+                    {"path": benign.display().to_string(), "expect": "clean"},
+                    {"path": benign.display().to_string(), "expect": "clean"},
+                    {"path": "/oc/absent.bin", "expect": "error"}
+                ]
+            })
+            .to_string()
+            .as_bytes(),
+        );
+        let report = std::env::temp_dir().join(format!("oc_q_{}_report.json", std::process::id()));
+        let args: Vec<String> = vec![
+            "--manifest".into(),
+            manifest.display().to_string(),
+            "--report".into(),
+            report.display().to_string(),
+            "--min-malicious-rate".into(),
+            "0.9".into(),
+            "--max-fpr-rate".into(),
+            "0.0".into(),
+        ];
+        let (code, out, _) = run_capture(&args);
+        assert_eq!(code, 0, "{out}");
+        let written = fs::read_to_string(&report).unwrap();
+        assert_eq!(written.trim(), out.trim());
+        let v: serde_json::Value = serde_json::from_str(&written).unwrap();
+        assert_eq!(v["total"], 4);
+        assert_eq!(v["passed"], 4);
+        assert_eq!(v["thresholds"]["met"], true);
+        for p in [suspect, benign, manifest, report] {
+            let _ = fs::remove_file(p);
+        }
+    }
+
+    #[test]
+    fn fichiers_libres_et_echec_de_seuil() {
+        let benign = tmp("free.txt", b"bonjour");
+        let (code, out, _) = run_capture(&[benign.display().to_string()]);
+        assert_eq!(code, 0, "{out}");
+        assert!(out.contains("\"expect\": \"any\""));
+
+        // Un échantillon malveillant attendu mais propre → manqué, seuil non atteint.
+        let manifest = tmp(
+            "miss.json",
+            serde_json::json!({"samples": [{"path": benign.display().to_string(), "expect": "malicious"}]})
+                .to_string()
+                .as_bytes(),
+        );
+        let (code, out, _) = run_capture(&[
+            "--manifest".into(),
+            manifest.display().to_string(),
+            "--min-malicious-rate".into(),
+            "1".into(),
+            "--max-fpr-rate".into(),
+            "0".into(),
+        ]);
+        assert_eq!(code, 1);
+        let v: serde_json::Value = serde_json::from_str(&out).unwrap();
+        assert_eq!(v["missed"], 1);
+        assert_eq!(v["thresholds"]["met"], false);
+
+        // Rapport non inscriptible : signalé, sans changer le verdict.
+        let (code, _, err) = run_capture(&[
+            "--report".into(),
+            "/oc/dossier/inexistant/r.json".into(),
+            benign.display().to_string(),
+        ]);
+        assert_eq!(code, 0);
+        assert!(err.contains("rapport"));
+        let _ = fs::remove_file(benign);
+        let _ = fs::remove_file(manifest);
+    }
+
+    #[test]
+    fn faux_positif_compte() {
+        let suspect = tmp("fp.ps1", b"powershell -enc ZQ== ; Invoke-Expression $x");
+        let report = run_panel(
+            &[SampleExpectation {
+                path: suspect.display().to_string(),
+                expect: "clean".into(),
+                label: None,
+            }],
+            &RunOptions {
+                min_malicious_rate: None,
+                max_fpr_rate: None,
+            },
+        );
+        assert_eq!(report.false_positives, 1);
+        assert_eq!(report.metrics.false_positive_rate, 1.0);
+        assert!(report.thresholds.is_none());
+        assert!(matches_verdict("Inconclusive", "clean"));
+        assert!(!matches_verdict("Suspicious", "clean"));
+        let _ = fs::remove_file(suspect);
     }
 
     #[test]

@@ -1,4 +1,3 @@
-using System.ComponentModel;
 using System.Diagnostics;
 using System.IO;
 using System.Runtime.Versioning;
@@ -14,8 +13,6 @@ namespace optiCombat.Services
     [SupportedOSPlatform("windows")]
     public static class ElevatedCommandRunner
     {
-        private const int ErrorCancelled = 1223;
-
         /// <summary>Ligne de commande passée à <c>cmd.exe</c> (testable).</summary>
         public static string BuildArguments(IReadOnlyList<string> commands) =>
             "/d /c " + string.Join(" && ", commands);
@@ -33,26 +30,22 @@ namespace optiCombat.Services
 
             try
             {
-                using var proc = Process.Start(new ProcessStartInfo
+                var outcome = SystemShell.Current.Run(new ProcessStartInfo
                 {
                     FileName = Path.Combine(Environment.SystemDirectory, "cmd.exe"),
                     Arguments = BuildArguments(commands),
                     UseShellExecute = true,
                     Verb = "runas",
                     WindowStyle = ProcessWindowStyle.Hidden,
-                });
-                if (proc == null)
+                }, waitForExit ? timeoutMs : null);
+                if (outcome.Cancelled)
+                {
+                    AppLogger.Info("ElevatedCommandRunner", "Élévation refusée par l'utilisateur");
                     return false;
+                }
                 if (!waitForExit)
-                    return true;
-                if (!proc.WaitForExit(timeoutMs))
-                    return false;
-                return proc.ExitCode == 0;
-            }
-            catch (Win32Exception ex) when (ex.NativeErrorCode == ErrorCancelled)
-            {
-                AppLogger.Info("ElevatedCommandRunner", "Élévation refusée par l'utilisateur");
-                return false;
+                    return outcome.Started;
+                return outcome.Succeeded;
             }
             catch (Exception ex)
             {

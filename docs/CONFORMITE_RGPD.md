@@ -31,7 +31,8 @@ Aucune de ces données ne quitte le poste.
 ### Mises à jour de signatures (ClamAV/YARA)
 
 - `freshclam` contacte `database.clamav.net` ; les règles sont récupérées via l'API GitHub (`api.github.com/repos/YARAHQ/yara-forge`) et le certificat CVD via `raw.githubusercontent.com`. Téléchargements de données publiques uniquement : pas d'envoi de données utilisateur (adresse IP et User-Agent `optiCombat` visibles par ces serveurs, comme pour toute requête HTTP).
-- La vérification de mise à jour de l'application (`UpdateService`) n'émet **aucune requête** : le canal OTA n'est pas configuré.
+- **Threat intel abuse.ch** (opt-in) : si l'utilisateur enregistre une Auth-Key gratuite dans Options, `ThreatIntelFeedUpdater` télécharge des exports publics (MalwareBazaar, URLhaus, ThreatFox) toutes les 12 heures. La clé est placée dans l'URL du téléchargement ; aucun fichier ni hash de l'utilisateur n'est envoyé. Sans clé, aucune requête n'est émise et le moteur IOC reste vide.
+- **Version de l'application** (`UpdateService`) : une requête vers `api.github.com/repos/1donatien0/optiCOMBAT/releases/latest` compare la version locale. Rien n'est téléchargé ni installé ; l'utilisateur est renvoyé vers la page de la release.
 
 ## 3. Points à formaliser pour le RGPD
 
@@ -44,4 +45,4 @@ Aucune de ces données ne quitte le poste.
 
 ## 4. Verdict
 
-Le design est **respectueux de la vie privée** : traitement local par défaut, chiffrement de la quarantaine, caviardage des logs, rétention bornée, et le seul envoi externe (hash VirusTotal) est **opt-in**. Le principal travail restant est **documentaire** (politique de confidentialité + mention du traitement VirusTotal), pas technique.
+Le design est **respectueux de la vie privée** : traitement local par défaut, chiffrement de la quarantaine, caviardage des logs, rétention bornée. Les envois externes sont opt-in (hash VirusTotal) ou limités à des téléchargements publics (signatures, exports abuse.ch si une Auth-Key est saisie, consultation de la dernière release GitHub). Le principal travail restant est **documentaire** (politique de confidentialité + mention de ces traitements), pas technique.

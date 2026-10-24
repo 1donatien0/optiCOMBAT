@@ -12,7 +12,7 @@ celle du projet `optiCombat.Application` ; ce dossier n’est pas inclus dans le
 ## Fonctionnement
 
 1. `ServiceRegistration` appelle `services.UseOptiCombatEngine()`.
-2. Si `opticombat.dll` est présente à côté de `optiCombat.exe` et se charge, `ScanOrchestrator`
+2. Si `opticombat_engine.dll` est présente à côté de `optiCombat.exe` et se charge, `ScanOrchestrator`
    délègue au cœur Rust ; sinon (DLL absente, bloquée par Smart App Control `0x800711C7`,
    ou remplacée par erreur) repli automatique sur ClamAV + YARA.
 3. Construire et déployer la DLL :

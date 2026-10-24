@@ -18,6 +18,10 @@
 //! - **URLhaus** (abuse.ch) : liste texte d'URLs de distribution de malware.
 //! - **ThreatFox** (abuse.ch) : CSV d'IOC communautaires (IP, domaines, URLs, hachages).
 
+/// Plafond d'entrées par feed : un export corrompu ou démesuré ne doit pas épuiser
+/// la mémoire du processus qui héberge le moteur.
+pub const MAX_FEED_ENTRIES: usize = 2_000_000;
+
 pub mod extractor;
 pub mod threatfox;
 pub mod urlhaus;

@@ -68,6 +68,8 @@ public sealed partial class OptionsPage : UserControl
         AppVersionText.Text = ViewModel.AppVersionLabel;
         UpdateStatusText.Text = ViewModel.UpdateStatusMessage;
         VirusTotalBox.Password = ViewModel.VirusTotalApiKey;
+        AbuseChBox.Password = ViewModel.AbuseChAuthKey;
+        ThreatIntelStatusText.Text = ViewModel.ThreatIntelStatus;
         FavoriteScanCombo.SelectedIndex = ViewModel.FavoriteScanIndex;
 
         for (int i = 0; i < LanguageCombo.Items.Count; i++)
@@ -275,6 +277,20 @@ public sealed partial class OptionsPage : UserControl
     {
         if (_syncing) return;
         ViewModel.SaveVirusTotalKey(VirusTotalBox.Password);
+    }
+
+    // Enregistrée à la sortie du champ (et non à chaque frappe) : une clé valide lance un
+    // téléchargement des feeds abuse.ch, qui ne doit pas partir sur une saisie incomplète.
+    private async void AbuseChKey_LostFocus(object sender, RoutedEventArgs e)
+    {
+        if (_syncing) return;
+        ViewModel.SaveAbuseChAuthKey(AbuseChBox.Password);
+        ThreatIntelStatusText.Text = ViewModel.ThreatIntelStatus;
+        if (ViewModel.LastThreatIntelUpdate is { } pending)
+        {
+            await pending;
+            ThreatIntelStatusText.Text = ViewModel.ThreatIntelStatus;
+        }
     }
 
     private async void BrowseExclusion_Click(object sender, RoutedEventArgs e)

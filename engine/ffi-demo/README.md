@@ -16,14 +16,14 @@ Ce dossier montre comment le code C# appelle le **cœur moteur Rust** via une fr
 ## Bibliothèque
 
 La crate `engine/crates/opticombat-ffi` produit :
-- `opticombat.dll` (Windows) / `libopticombat.so` (Linux) — `crate-type = ["cdylib"]`.
+- `opticombat_engine.dll` (Windows) / `libopticombat_engine.so` (Linux) — `crate-type = ["cdylib"]`.
 
 Build :
 
 ```bash
 cd engine
 cargo build -p opticombat-ffi --release
-# → engine/target/release/opticombat.dll (ou libopticombat.so)
+# → engine/target/release/opticombat_engine.dll (ou libopticombat_engine.so)
 ```
 
 ## Contrat mémoire
@@ -31,6 +31,18 @@ cargo build -p opticombat-ffi --release
 - Les chaînes de `opticombat_scan_json` sont libérées par `opticombat_string_free`
   (côté C#, `OptiCombatNative.ScanJson` le fait dans un `finally`).
 - `opticombat_version` renvoie une chaîne statique : ne pas libérer.
+- `opticombat_threat_intel_stats` renvoie un JSON à libérer par `opticombat_string_free`.
+
+## Threat intel hors-ligne
+
+`opticombat_load_threat_intel(dir)` lit les exports abuse.ch déposés dans `dir`
+(`malwarebazaar.csv`, `malwarebazaar_sha256.txt`, `urlhaus.csv`, `urlhaus.txt`,
+`threatfox.csv`) et remplace le dispatcher partagé : MalwareBazaar alimente la
+réputation par hash, URLhaus et ThreatFox le moteur IOC. Renvoie le nombre
+d'entrées chargées, ou `-1` si le dossier est invalide. Aucun accès réseau : le
+téléchargement est fait par `ThreatIntelFeedUpdater` côté C#. La variable
+d'environnement `OPTICOMBAT_THREAT_INTEL_DIR` produit le même effet au premier
+appel, et la CLI accepte `--intel <dossier>`.
 - Sûreté : chaque point d'entrée Rust est enveloppé dans `catch_unwind`, et le
   profil release est `panic = "abort"` — aucun panic ne traverse la frontière.
 

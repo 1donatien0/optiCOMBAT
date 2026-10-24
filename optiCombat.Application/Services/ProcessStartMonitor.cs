@@ -104,22 +104,15 @@ namespace optiCombat.Services
 
         private void SurProcessDemarre(object sender, EventArrivedEventArgs e)
         {
-            if (_isSuspended())
-                return;
-
             try
             {
                 if (e.NewEvent?["TargetInstance"] is not ManagementBaseObject target)
                     return;
 
-                var processName = target["Name"]?.ToString();
-                if (string.IsNullOrWhiteSpace(processName))
-                    return;
-
-                var pid = Convert.ToInt32(target["ProcessId"]);
-                var paths = ResolvePathsToScan(processName, pid, target["CommandLine"]?.ToString());
-                foreach (var path in paths)
-                    _ = HandlePathAsync(path);
+                _ = OnProcessStarted(
+                    target["Name"]?.ToString(),
+                    Convert.ToInt32(target["ProcessId"]),
+                    target["CommandLine"]?.ToString());
             }
             catch (Exception ex)
             {
@@ -127,11 +120,26 @@ namespace optiCombat.Services
             }
         }
 
+        /// <summary>Tests uniquement : chemin d'image d'un PID et délai avant analyse.</summary>
+        internal Func<int, string?>? ImagePathProbe { get; set; }
+
+        internal TimeSpan SettleDelay { get; set; } = TimeSpan.FromMilliseconds(400);
+
+        /// <summary>Processus démarré : analyse de son image et des scripts passés en argument.</summary>
+        internal Task OnProcessStarted(string? processName, int pid, string? commandLine)
+        {
+            if (_isSuspended() || string.IsNullOrWhiteSpace(processName))
+                return Task.CompletedTask;
+
+            var paths = ResolvePathsToScan(processName, pid, commandLine);
+            return Task.WhenAll(paths.Select(HandlePathAsync));
+        }
+
         private IEnumerable<string> ResolvePathsToScan(string processName, int pid, string? commandLine)
         {
             var results = new List<string>();
 
-            var image = TryGetExecutablePath(pid);
+            var image = ImagePathProbe is { } probe ? probe(pid) : TryGetExecutablePath(pid);
             if (!string.IsNullOrWhiteSpace(image) && File.Exists(image) && RiskyFileExtensions.IsRisky(image))
                 results.Add(image);
 
@@ -172,14 +180,14 @@ namespace optiCombat.Services
             return null;
         }
 
-        private async Task HandlePathAsync(string filePath)
+        internal async Task HandlePathAsync(string filePath)
         {
             var now = DateTime.UtcNow;
             if (_recentScans.TryGetValue(filePath, out var last) && (now - last) < TimeSpan.FromSeconds(45))
                 return;
             _recentScans[filePath] = now;
 
-            await Task.Delay(400).ConfigureAwait(false);
+            await Task.Delay(SettleDelay).ConfigureAwait(false);
             if (!File.Exists(filePath) || _exclusions.Current.IsFileExcluded(filePath))
                 return;
 
@@ -193,9 +201,7 @@ namespace optiCombat.Services
                     _notifications.ShowThreatDetected(threat);
                     if (_exclusions.Current.AutoQuarantineEnabled)
                     {
-                        if (_prefs.Current.BackupBeforeQuarantine)
-                            ThreatRemediationService.TryCreateSafetyCopy(threat);
-
+                        // La copie de sécurité éventuelle est faite par QuarantineManager.Quarantine.
                         if (_quarantineManager.Quarantine(threat, result.SessionId))
                             _notifications.ShowQuarantined(threat);
                     }

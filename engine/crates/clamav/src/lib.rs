@@ -73,7 +73,7 @@ impl SignatureEngine for ClamAvEngine {
 }
 
 /// Préfixe EICAR stocké masqué (XOR) : en clair, la chaîne présente dans
-/// `opticombat.dll` faisait détecter la DLL elle-même comme « EICAR ».
+/// `opticombat_engine.dll` faisait détecter la DLL elle-même comme « EICAR ».
 fn eicar_prefix() -> Vec<u8> {
     const MASK: u8 = 0x5A;
     const MASKED: [u8; 33] = {
@@ -204,6 +204,39 @@ mod tests {
         let r = ClamAvEngine::new().scan_path(f.path()).unwrap();
         assert_eq!(r.verdict, Verdict::Clean);
         f.cleanup();
+    }
+
+    #[test]
+    fn composite_utilise_clamd_puis_bascule_sur_le_repli() {
+        // 1 PING (construction) + 1 INSTREAM, puis le démon s'arrête.
+        let (addr, h) = crate::clamd::fake::spawn(2, "stream: Win.Fake FOUND\0");
+        let b = CompositeClamAvBackend::with_clamd(addr);
+        assert!(b.clamd_available());
+        let r = b.scan_bytes(Path::new("x"), b"contenu").unwrap();
+        assert_eq!(r.detections[0].name, "Win.Fake");
+        h.join().unwrap();
+        // Démon tombé : échec → marqué indisponible → moteur de secours (propre).
+        let r = b.scan_bytes(Path::new("x"), b"contenu").unwrap();
+        assert_eq!(r.verdict, Verdict::Clean);
+        assert!(!b.clamd_available(), "pas de nouvelle sonde avant 30 s");
+        assert_eq!(b.name(), "clamav");
+    }
+
+    #[test]
+    fn composite_sans_demon_et_moteur_indisponible() {
+        let b = CompositeClamAvBackend::with_clamd("127.0.0.1:1");
+        assert!(!b.clamd_available());
+        let mut f = tempfile_with(b"rien");
+        assert_eq!(b.scan_path(f.path()).unwrap().verdict, Verdict::Clean);
+        f.cleanup();
+        assert!(b.scan_path(Path::new("/oc/absent")).is_err());
+
+        let off = ClamAvEngine::with_availability(false);
+        assert!(matches!(
+            off.scan_bytes(Path::new("x"), b"y"),
+            Err(EngineError::Unavailable(_))
+        ));
+        assert_eq!(ClamAvEngine::default().name(), "clamav");
     }
 
     // Mini-helper de fichier temporaire (évite une dépendance externe).

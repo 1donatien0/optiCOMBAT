@@ -16,7 +16,7 @@ public sealed class ProtectionPipeServer : IDisposable
     // Borne anti-DoS : le pipe est accessible aux utilisateurs authentifiés (cf. ProtectionPipeAcl),
     // donc on plafonne la taille d'un buffer AMSI/IPC pour éviter qu'un client local n'épuise
     // la mémoire ou le disque. ~96 Mo de base64 ≈ ~72 Mo décodés, large pour un scan AMSI légitime.
-    private const int MaxScanBufferBase64Length = 96 * 1024 * 1024;
+    internal const int MaxScanBufferBase64Length = 96 * 1024 * 1024;
 
     /// <summary>Taille max d'une requête IPC (buffer base64 + enveloppe JSON).</summary>
     private const int MaxRequestBytes = MaxScanBufferBase64Length + 64 * 1024;
@@ -255,7 +255,8 @@ public sealed class ProtectionPipeServer : IDisposable
     private Task<ProtectionPipeResponse> DispatchAsync(ProtectionPipeRequest request, CancellationToken ct) =>
         Task.FromResult(Dispatch(request));
 
-    private ProtectionPipeResponse Dispatch(ProtectionPipeRequest request)
+    /// <summary>Traite une requête déjà désérialisée (interne pour les tests, sans tube nommé).</summary>
+    internal ProtectionPipeResponse Dispatch(ProtectionPipeRequest request)
     {
         switch (request.Operation)
         {
@@ -294,7 +295,10 @@ public sealed class ProtectionPipeServer : IDisposable
                     return ProtectionPipeResponse.Error("Buffer vide");
                 if (request.BufferBase64.Length > MaxScanBufferBase64Length)
                     return ProtectionPipeResponse.Error("Buffer trop volumineux");
-                var buffer = request.BufferBase64;
+                var decoded = new byte[request.BufferBase64.Length / 4 * 3 + 3];
+                if (!Convert.TryFromBase64String(request.BufferBase64, decoded, out var written))
+                    return ProtectionPipeResponse.Error("Buffer invalide");
+                var buffer = decoded.AsSpan(0, written).ToArray();
                 var contentName = request.ContentName ?? "amsi_buffer";
                 return WithRateLimit(ct => ScanBuffer(buffer, contentName, ct));
 
@@ -340,14 +344,17 @@ public sealed class ProtectionPipeServer : IDisposable
         return ProtectionPipeResponse.Threat(threat.VirusName, threat.DetectedBy);
     }
 
-    private ProtectionPipeResponse ScanBuffer(string bufferBase64, string contentName, CancellationToken ct)
+    private ProtectionPipeResponse ScanBuffer(byte[] bytes, string contentName, CancellationToken ct)
     {
-        var bytes = Convert.FromBase64String(bufferBase64);
         var tempDir = Path.Combine(Path.GetTempPath(), "opticombat_ipc_" + Guid.NewGuid().ToString("N"));
         Directory.CreateDirectory(tempDir);
-        var tempFile = Path.Combine(tempDir, Path.GetFileName(contentName));
-        if (string.IsNullOrWhiteSpace(Path.GetFileName(tempFile)))
-            tempFile = Path.Combine(tempDir, "amsi_buffer.bin");
+        // Nom fourni par le client : seul le dernier segment est gardé, et un nom vide ou
+        // contenant des caractères interdits retombe sur un nom fixe (jamais d'exception d'E/S).
+        var name = Path.GetFileName(contentName);
+        if (string.IsNullOrWhiteSpace(name) || name.IndexOfAny(Path.GetInvalidFileNameChars()) >= 0
+            || name.Length > 128)
+            name = "amsi_buffer.bin";
+        var tempFile = Path.Combine(tempDir, name);
 
         try
         {

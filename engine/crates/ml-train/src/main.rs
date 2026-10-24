@@ -11,6 +11,7 @@ use pe_analysis::PeFeatures;
 use serde::{Deserialize, Serialize};
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 const NCLASS: usize = 4;
@@ -91,7 +92,7 @@ fn features_from_pe(f: &PeFeatures) -> [f64; NFEAT] {
     ]
 }
 
-fn extract_pe(path: &Path, class: &str) -> std::io::Result<()> {
+fn extract_pe(path: &Path, class: &str, out: &mut dyn Write) -> std::io::Result<()> {
     let pe = pe_analysis::analyze(path).map_err(|e| std::io::Error::other(e.to_string()))?;
     let feat = features_from_pe(&pe);
     let sample = LabeledSample {
@@ -103,17 +104,18 @@ fn extract_pe(path: &Path, class: &str) -> std::io::Result<()> {
         injection: feat[4],
         network: feat[5],
     };
-    println!("{}", serde_json::to_string(&sample).unwrap());
-    Ok(())
+    let json = serde_json::to_string(&sample).map_err(std::io::Error::other)?;
+    writeln!(out, "{json}")
 }
 
-fn extract_dir(dir: &Path, class: &str) -> std::io::Result<()> {
-    for entry in fs::read_dir(dir)? {
-        let entry = entry?;
-        let path = entry.path();
-        if path.is_file() {
-            extract_pe(&path, class)?;
-        }
+fn extract_dir(dir: &Path, class: &str, out: &mut dyn Write) -> std::io::Result<()> {
+    let mut paths: Vec<PathBuf> = fs::read_dir(dir)?
+        .filter_map(|e| e.ok().map(|e| e.path()))
+        .filter(|p| p.is_file())
+        .collect();
+    paths.sort(); // sortie reproductible
+    for path in paths {
+        extract_pe(&path, class, out)?;
     }
     Ok(())
 }
@@ -254,69 +256,106 @@ fn train(data: &[([f64; NFEAT], usize)]) -> [[f64; NFEAT + 1]; NCLASS] {
     w
 }
 
-fn print_weights(w: &[[f64; NFEAT + 1]; NCLASS], acc: f64) {
-    println!(
+fn print_weights(
+    w: &[[f64; NFEAT + 1]; NCLASS],
+    acc: f64,
+    out: &mut dyn Write,
+) -> std::io::Result<()> {
+    writeln!(
+        out,
         "// Poids appris par ml-train (corpus réel, exactitude holdout {:.1}%).",
         acc * 100.0
-    );
-    println!("const MODELS: &[ClassModel] = &[");
+    )?;
+    writeln!(out, "const MODELS: &[ClassModel] = &[")?;
     for k in 0..NCLASS {
-        println!("    ClassModel {{");
-        println!("        class: Class::{},", CLASS_NAMES[k]);
-        println!("        bias: {:.4},", w[k][0]);
-        print!("        weights: [");
+        writeln!(out, "    ClassModel {{")?;
+        writeln!(out, "        class: Class::{},", CLASS_NAMES[k])?;
+        writeln!(out, "        bias: {:.4},", w[k][0])?;
+        write!(out, "        weights: [")?;
         for j in 0..NFEAT {
-            print!("{:.4}", w[k][j + 1]);
+            write!(out, "{:.4}", w[k][j + 1])?;
             if j + 1 < NFEAT {
-                print!(", ");
+                write!(out, ", ")?;
             }
         }
-        println!("],");
-        println!("    }},");
+        writeln!(out, "],")?;
+        writeln!(out, "    }},")?;
     }
-    println!("];");
+    writeln!(out, "];")
+}
+
+fn synthetic_dataset(per_class: usize) -> Vec<([f64; NFEAT], usize)> {
+    let mut rng = Rng::new(0xC0FFEE123);
+    let mut train = Vec::with_capacity(per_class * NCLASS);
+    for c in 0..NCLASS {
+        for _ in 0..per_class {
+            train.push((sample_synthetic(c, &mut rng), c));
+        }
+    }
+    train
 }
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() >= 4 && args[1] == "--extract" {
-        extract_pe(Path::new(&args[2]), &args[3]).expect("extract PE");
-        return;
-    }
-    if args.len() >= 4 && args[1] == "--extract-dir" {
-        extract_dir(Path::new(&args[2]), &args[3]).expect("extract dir");
-        return;
+    let code = run(
+        &args,
+        &corpus_dir(),
+        &mut std::io::stdout().lock(),
+        &mut std::io::stderr().lock(),
+    );
+    std::process::exit(code);
+}
+
+/// Point d'entrée testable (`args[0]` = nom du programme). Codes : 0 succès,
+/// 1 validation échouée, 2 erreur (corpus, extraction).
+fn run(args: &[String], corpus: &Path, out: &mut dyn Write, err: &mut dyn Write) -> i32 {
+    if args.len() >= 4 && (args[1] == "--extract" || args[1] == "--extract-dir") {
+        let (target, class) = (Path::new(&args[2]), args[3].as_str());
+        let r = if args[1] == "--extract" {
+            extract_pe(target, class, out)
+        } else {
+            extract_dir(target, class, out)
+        };
+        return match r {
+            Ok(()) => 0,
+            Err(e) => {
+                let _ = writeln!(err, "extraction : {e}");
+                2
+            }
+        };
     }
 
     let use_synthetic = args.iter().any(|a| a == "--synthetic");
     let do_validate = args.iter().any(|a| a == "--validate");
 
     let train_data = if use_synthetic {
-        eprintln!("Mode synthétique (legacy) — graine 0xC0FFEE123");
-        let mut rng = Rng::new(0xC0FFEE123);
-        let mut train = Vec::new();
-        for c in 0..NCLASS {
-            for _ in 0..1500 {
-                train.push((sample_synthetic(c, &mut rng), c));
+        let _ = writeln!(err, "Mode synthétique (legacy) — graine 0xC0FFEE123");
+        synthetic_dataset(1500)
+    } else {
+        let path = corpus.join("labeled.jsonl");
+        let _ = writeln!(err, "Chargement du corpus réel : {}", path.display());
+        match load_jsonl(&path) {
+            Ok(d) => d,
+            Err(e) => {
+                let _ = writeln!(err, "corpus labeled.jsonl : {e}");
+                return 2;
             }
         }
-        train
-    } else {
-        let path = corpus_dir().join("labeled.jsonl");
-        eprintln!("Chargement du corpus réel : {}", path.display());
-        load_jsonl(&path).expect("corpus labeled.jsonl")
     };
 
-    assert!(
-        !train_data.is_empty(),
-        "jeu d'entraînement vide — fournir corpus/labeled.jsonl"
-    );
+    if train_data.is_empty() {
+        let _ = writeln!(
+            err,
+            "jeu d'entraînement vide — fournir corpus/labeled.jsonl"
+        );
+        return 2;
+    }
 
     let w = train(&train_data);
-    let holdout_path = corpus_dir().join("holdout.jsonl");
-    let holdout = load_jsonl(&holdout_path).unwrap_or_default();
+    let holdout = load_jsonl(&corpus.join("holdout.jsonl")).unwrap_or_default();
     let acc = accuracy(&w, &holdout);
-    eprintln!(
+    let _ = writeln!(
+        err,
         "Exactitude holdout = {:.2}% ({}/{})",
         acc * 100.0,
         (acc * holdout.len() as f64).round() as usize,
@@ -324,11 +363,14 @@ fn main() {
     );
 
     if do_validate && acc < 0.70 {
-        eprintln!("Échec validation : exactitude holdout < 70 %");
-        std::process::exit(1);
+        let _ = writeln!(err, "Échec validation : exactitude holdout < 70 %");
+        return 1;
     }
 
-    print_weights(&w, acc);
+    match print_weights(&w, acc, out) {
+        Ok(()) => 0,
+        Err(_) => 2,
+    }
 }
 
 #[cfg(test)]
@@ -339,6 +381,150 @@ mod tests {
     fn corpus_labeled_charge() {
         let data = load_jsonl(&corpus_dir().join("labeled.jsonl")).expect("labeled");
         assert!(data.len() >= 40, "corpus trop petit : {}", data.len());
+    }
+
+    fn s(v: &[&str]) -> Vec<String> {
+        std::iter::once("ml-train")
+            .chain(v.iter().copied())
+            .map(String::from)
+            .collect()
+    }
+
+    fn run_capture(args: &[String], corpus: &Path) -> (i32, String, String) {
+        let (mut out, mut err) = (Vec::new(), Vec::new());
+        let code = run(args, corpus, &mut out, &mut err);
+        (
+            code,
+            String::from_utf8(out).unwrap(),
+            String::from_utf8(err).unwrap(),
+        )
+    }
+
+    fn tmp_dir(tag: &str) -> PathBuf {
+        let d = std::env::temp_dir().join(format!("oc_mlt_{tag}_{}", std::process::id()));
+        let _ = fs::remove_dir_all(&d);
+        fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn entrainement_corpus_reel_valide_et_imprime_les_poids() {
+        let (code, out, err) = run_capture(&s(&["--validate"]), &corpus_dir());
+        assert_eq!(code, 0, "{err}");
+        assert!(out.contains("const MODELS: &[ClassModel]"));
+        assert_eq!(out.matches("ClassModel {").count(), NCLASS);
+        assert!(err.contains("Exactitude holdout"));
+    }
+
+    #[test]
+    fn corpus_absent_vide_ou_invalide() {
+        let missing = tmp_dir("missing");
+        let (code, _, err) = run_capture(&s(&[]), &missing);
+        assert_eq!(code, 2);
+        assert!(err.contains("labeled.jsonl"));
+
+        let empty = tmp_dir("empty");
+        fs::write(empty.join("labeled.jsonl"), "\n{\"class\":\"Inconnue\",\"entropy\":0,\"imports\":0,\"wx_section\":0,\"packer\":0,\"injection\":0,\"network\":0}\n").unwrap();
+        let (code, _, err) = run_capture(&s(&[]), &empty);
+        assert_eq!(code, 2);
+        assert!(err.contains("vide"));
+
+        let bad = tmp_dir("bad");
+        fs::write(bad.join("labeled.jsonl"), "{pas du json}\n").unwrap();
+        assert_eq!(run_capture(&s(&[]), &bad).0, 2);
+        for d in [missing, empty, bad] {
+            let _ = fs::remove_dir_all(d);
+        }
+    }
+
+    #[test]
+    fn validation_echoue_sous_70_pourcent() {
+        // Entraîné sur une seule classe, évalué sur une autre : exactitude nulle.
+        let d = tmp_dir("lowacc");
+        let line = |c: &str| {
+            format!("{{\"class\":\"{c}\",\"entropy\":0.5,\"imports\":0.5,\"wx_section\":0,\"packer\":0,\"injection\":0,\"network\":0}}\n")
+        };
+        fs::write(d.join("labeled.jsonl"), line("Benign").repeat(5)).unwrap();
+        fs::write(d.join("holdout.jsonl"), line("Rat").repeat(3)).unwrap();
+        let (code, _, err) = run_capture(&s(&["--validate"]), &d);
+        assert_eq!(code, 1, "{err}");
+        let (code, out, _) = run_capture(&s(&[]), &d);
+        assert_eq!(code, 0);
+        assert!(out.contains("exactitude holdout 0.0%"), "{out}");
+        let _ = fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn jeu_synthetique_separable() {
+        let data = synthetic_dataset(60);
+        assert_eq!(data.len(), 60 * NCLASS);
+        let w = train(&data);
+        assert!(accuracy(&w, &data) > 0.8);
+        assert_eq!(accuracy(&w, &[]), 0.0);
+        let p = predict(&w, &data[0].0);
+        assert!((p.iter().sum::<f64>() - 1.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn extraction_d_un_pe_et_d_un_dossier() {
+        use pe_analysis::fixtures::{build_pe, FixtureSection, CODE, RWX};
+        let d = tmp_dir("extract");
+        let pe = build_pe(
+            &[
+                FixtureSection {
+                    name: ".text",
+                    characteristics: CODE,
+                    data: b"..WriteProcessMemory..CreateRemoteThread..URLDownloadToFileA..",
+                },
+                FixtureSection {
+                    name: ".evil",
+                    characteristics: RWX,
+                    data: b"x",
+                },
+            ],
+            false,
+            b"",
+        );
+        fs::write(d.join("a.exe"), &pe).unwrap();
+        fs::write(d.join("b.exe"), &pe).unwrap();
+        fs::create_dir_all(d.join("sous-dossier")).unwrap();
+
+        let one = d.join("a.exe").display().to_string();
+        let (code, out, _) = run_capture(&s(&["--extract", &one, "Rat"]), &corpus_dir());
+        assert_eq!(code, 0);
+        let sample: LabeledSample = serde_json::from_str(out.trim()).unwrap();
+        assert_eq!(sample.class, "Rat");
+        assert_eq!(sample.injection, 1.0);
+        assert_eq!(sample.network, 1.0);
+        assert_eq!(sample.wx_section, 1.0);
+        assert!(sample.packer > 0.0);
+
+        let dir = d.display().to_string();
+        let (code, out, _) = run_capture(&s(&["--extract-dir", &dir, "Dropper"]), &corpus_dir());
+        assert_eq!(code, 0);
+        assert_eq!(out.lines().count(), 2);
+
+        let (code, _, err) =
+            run_capture(&s(&["--extract", "/oc/absent.exe", "Rat"]), &corpus_dir());
+        assert_eq!(code, 2);
+        assert!(err.contains("extraction"));
+        let (code, _, _) = run_capture(&s(&["--extract-dir", "/oc/absent", "Rat"]), &corpus_dir());
+        assert_eq!(code, 2);
+        let _ = fs::remove_dir_all(d);
+    }
+
+    #[test]
+    fn rng_bornes() {
+        let mut r = Rng::new(7);
+        for _ in 0..100 {
+            let u = r.uniform(0.2, 0.4);
+            assert!((0.2..0.4).contains(&u));
+            let b = r.bernoulli(0.5);
+            assert!(b == 0.0 || b == 1.0);
+        }
+        let mut sink = Vec::new();
+        print_weights(&[[0.0; NFEAT + 1]; NCLASS], 1.0, &mut sink).unwrap();
+        assert!(String::from_utf8(sink).unwrap().contains("100.0%"));
     }
 
     #[test]

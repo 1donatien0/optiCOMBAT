@@ -23,8 +23,9 @@ public static class ThreatRepairService
         QuarantineManager quarantine,
         IUserPreferencesAccessor? preferences = null)
     {
-        if ((preferences ?? new DefaultUserPreferencesAccessor()).Current.BackupBeforeQuarantine)
-            ThreatRemediationService.TryCreateSafetyCopy(threat);
+        // La copie de sécurité (préférence BackupBeforeQuarantine) est faite par QuarantineManager :
+        // la faire aussi ici produisait deux copies par menace.
+        _ = preferences;
 
         if (quarantine.Quarantine(threat))
         {
@@ -42,31 +43,36 @@ public static class ThreatRepairService
         };
     }
 
+    /// <summary>Tests uniquement : emplacement de MpCmdRun.exe.</summary>
+    internal static string? MpCmdRunPathOverride { get; set; }
+
     /// <summary>Lance une analyse Defender ciblée (MpCmdRun) si disponible — complément cloud Microsoft.</summary>
     public static RepairResult TryDefenderTargetedScan(string filePath)
     {
         try
         {
-            var mp = Path.Combine(
+            var mp = MpCmdRunPathOverride ?? Path.Combine(
                 Environment.GetFolderPath(Environment.SpecialFolder.ProgramFiles),
                 "Windows Defender", "MpCmdRun.exe");
 
             if (!File.Exists(mp))
                 return new RepairResult { Success = false, Message = "Defender indisponible" };
 
-            using var proc = Process.Start(new ProcessStartInfo
+            // ArgumentList : un chemin contenant des guillemets ne peut pas injecter d'options MpCmdRun.
+            var psi = new ProcessStartInfo
             {
                 FileName = mp,
-                Arguments = $"-Scan -ScanType 3 -File \"{filePath}\" -DisableRemediation",
                 UseShellExecute = false,
                 CreateNoWindow = true,
-            });
-            proc?.WaitForExit(120_000);
+            };
+            foreach (var arg in new[] { "-Scan", "-ScanType", "3", "-File", filePath, "-DisableRemediation" })
+                psi.ArgumentList.Add(arg);
+            var outcome = SystemShell.Current.Run(psi, 120_000);
             return new RepairResult
             {
-                Success = proc?.ExitCode == 0,
+                Success = outcome.Succeeded,
                 UsedDefenderFallback = true,
-                Message = $"Defender MpCmdRun exit={proc?.ExitCode}",
+                Message = $"Defender MpCmdRun exit={outcome.ExitCode}",
             };
         }
         catch (Exception ex)

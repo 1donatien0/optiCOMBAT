@@ -188,7 +188,7 @@ pub fn unmask_bytes(masked: &[u8]) -> Vec<u8> {
 
 /// Motif de détection stocké masqué dans le binaire : en clair, les tables de
 /// motifs (noms d'API d'injection, clés Run, « powershell »…) faisaient
-/// détecter `opticombat.dll` par ses propres moteurs (audit 360).
+/// détecter `opticombat_engine.dll` par ses propres moteurs (audit 360).
 #[macro_export]
 macro_rules! masked {
     ($s:literal) => {{
@@ -220,5 +220,124 @@ pub trait SignatureEngine: Send + Sync {
     fn scan_bytes(&self, path: &Path, data: &[u8]) -> Result<EngineResult, EngineError> {
         let _ = data;
         self.scan_path(path)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    struct Dummy;
+    impl Engine for Dummy {
+        fn name(&self) -> &str {
+            "dummy"
+        }
+        fn scan(&self, ctx: &ScanContext) -> Result<EngineResult, EngineError> {
+            let bytes = ctx.bytes()?;
+            Ok(if bytes.is_empty() {
+                EngineResult::inconclusive(self.name())
+            } else {
+                EngineResult::clean(self.name())
+            })
+        }
+    }
+
+    struct Sig;
+    impl SignatureEngine for Sig {
+        fn name(&self) -> &str {
+            "sig"
+        }
+        fn scan_path(&self, path: &Path) -> Result<EngineResult, EngineError> {
+            if path.exists() {
+                Ok(EngineResult::clean("sig"))
+            } else {
+                Err(EngineError::Unavailable(path.display().to_string()))
+            }
+        }
+    }
+
+    #[test]
+    fn severites_affichees() {
+        let all = [
+            (Severity::Clean, "Clean"),
+            (Severity::Informational, "Informational"),
+            (Severity::Minor, "Minor"),
+            (Severity::Major, "Major"),
+            (Severity::Critical, "Critical"),
+        ];
+        for (s, txt) in all {
+            assert_eq!(s.to_string(), txt);
+        }
+        assert!(Severity::Critical > Severity::Major);
+    }
+
+    #[test]
+    fn resultat_et_score_cumule() {
+        let mut r = EngineResult::clean("x");
+        assert_eq!(r.total_score(), 0);
+        for score in [10, 25] {
+            r.detections.push(Detection {
+                engine: "x".into(),
+                name: "n".into(),
+                score,
+                severity: Severity::Minor,
+                explanation: String::new(),
+            });
+        }
+        assert_eq!(r.total_score(), 35);
+        let i = EngineResult::inconclusive("y");
+        assert_eq!(i.verdict, Verdict::Inconclusive);
+        assert_eq!(i.engine, "y");
+    }
+
+    #[test]
+    fn contexte_lit_le_disque_sans_donnees_partagees() {
+        let p = std::env::temp_dir().join(format!("oc_core_{}.bin", std::process::id()));
+        std::fs::write(&p, b"abc").unwrap();
+        let ctx = ScanContext::new(p.clone(), FileKind::Unknown, 3);
+        assert_eq!(&*ctx.bytes().unwrap(), b"abc");
+        assert_eq!(Dummy.scan(&ctx).unwrap().verdict, Verdict::Clean);
+        assert!(Dummy.applicable(&ctx));
+
+        let shared = ScanContext::new(p.clone(), FileKind::Script, 0)
+            .with_data(std::sync::Arc::from(&b""[..]));
+        assert_eq!(Dummy.scan(&shared).unwrap().verdict, Verdict::Inconclusive);
+        let _ = std::fs::remove_file(&p);
+
+        let missing = ScanContext::new(p.clone(), FileKind::Unknown, 0);
+        let err = Dummy.scan(&missing).unwrap_err();
+        assert!(err.to_string().starts_with("io: "));
+    }
+
+    #[test]
+    fn erreurs_affichees() {
+        assert_eq!(
+            EngineError::Unavailable("x".into()).to_string(),
+            "indisponible: x"
+        );
+        assert_eq!(EngineError::Parse("y".into()).to_string(), "parse: y");
+        let io: EngineError = std::io::Error::other("z").into();
+        assert!(matches!(io, EngineError::Io(_)));
+        let as_dyn: &dyn std::error::Error = &io;
+        assert!(as_dyn.to_string().contains('z'));
+    }
+
+    #[test]
+    fn signature_engine_scan_bytes_par_defaut_relit_le_chemin() {
+        let here = Path::new(env!("CARGO_MANIFEST_DIR"));
+        assert_eq!(
+            Sig.scan_bytes(here, b"ignored").unwrap().verdict,
+            Verdict::Clean
+        );
+        assert!(Sig.scan_bytes(Path::new("/oc/absent"), b"").is_err());
+        assert_eq!(Sig.name(), "sig");
+    }
+
+    #[test]
+    fn masquage_reversible() {
+        let m = masked!(b"powershell");
+        assert_ne!(m, b"powershell");
+        assert_eq!(unmask_bytes(m), b"powershell");
+        assert_eq!(mask_bytes(&[NEEDLE_MASK]), [0u8]);
     }
 }

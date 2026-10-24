@@ -31,9 +31,8 @@ namespace optiCombat.Services
         /// </summary>
         private static readonly object HmacKeySync = new();
 
-        private static string HmacKeyPath => Path.Combine(
-            Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
-            "optiCombat", ".securestore_hmac.key");
+        /// <summary>%LOCALAPPDATA%\optiCombat\.securestore_hmac.key (redirigé en test par <see cref="OpticombatDataRoots"/>).</summary>
+        internal static string HmacKeyPath => OpticombatDataRoots.LocalFile(".securestore_hmac.key");
 
         /// <summary>
         /// Charge un objet T depuis un fichier sécurisé. Retourne default(T)

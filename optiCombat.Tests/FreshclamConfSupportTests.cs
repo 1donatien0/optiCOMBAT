@@ -133,4 +133,74 @@ public sealed class FreshclamConfSupportTests : IDisposable
         Assert.True(FreshclamConfSupport.IsOurManagedConf(File.ReadAllText(preferred)));
     }
 
+
+    private static byte[] Conf(string _) => FreshclamConfSupport.BuildConfBytes(9, "C:/db", "C:/log.txt")!;
+
+    [Fact]
+    public void EnsureWritableConf_repairs_install_conf_written_with_a_bom()
+    {
+        var preferred = Path.Combine(_root, "local", "freshclam.conf");
+        var install = Path.Combine(_root, "install", "freshclam.conf");
+        Directory.CreateDirectory(Path.GetDirectoryName(install)!);
+        File.WriteAllBytes(install, [0xEF, 0xBB, 0xBF, .. Conf(install)]);
+        string? repaired = null;
+
+        var used = FreshclamConfSupport.EnsureWritableConf(preferred, install, Conf, p => repaired = p);
+
+        Assert.Equal(preferred, used);
+        Assert.Equal(install, repaired);
+        Assert.False(FreshclamConfSupport.HasUtf8Bom(install));
+    }
+
+    [Fact]
+    public void Bom_conf_that_cannot_be_regenerated_is_set_aside()
+    {
+        var preferred = Path.Combine(_root, "local2", "freshclam.conf");
+        var install = Path.Combine(_root, "install2", "freshclam.conf");
+        Directory.CreateDirectory(Path.GetDirectoryName(install)!);
+        File.WriteAllBytes(install, [0xEF, 0xBB, 0xBF, .. Conf(install)]);
+
+        // Contenu introuvable pour le chemin d'installation : la conf BOM est mise de côté.
+        var used = FreshclamConfSupport.EnsureWritableConf(
+            preferred, install, p => p == preferred ? Conf(p) : null);
+
+        Assert.Equal(preferred, used);
+        Assert.False(File.Exists(install));
+        Assert.True(File.Exists(install + ".bom-corrupt.bak"));
+    }
+
+    [Fact]
+    public void EnsureWritableConf_falls_back_to_install_path_when_preferred_is_unusable()
+    {
+        var blocker = Path.Combine(_root, "blocker");
+        File.WriteAllText(blocker, "fichier");
+        var preferred = Path.Combine(blocker, "freshclam.conf");
+        var install = Path.Combine(_root, "install3", "freshclam.conf");
+
+        Assert.Equal(install, FreshclamConfSupport.EnsureWritableConf(preferred, install, Conf));
+        Assert.Null(FreshclamConfSupport.EnsureWritableConf(preferred, install, _ => null));
+    }
+
+    [Fact]
+    public void TryWriteConfAt_refuses_content_starting_with_a_bom()
+    {
+        var target = Path.Combine(_root, "bom", "freshclam.conf");
+        Assert.Null(FreshclamConfSupport.TryWriteConfAt(target, [0xEF, 0xBB, 0xBF, (byte)'x']));
+        Assert.False(File.Exists(target));
+    }
+
+    [Fact]
+    public void InvalidateIfLegacy_replaces_an_existing_backup()
+    {
+        var conf = Path.Combine(_root, "legacy.conf");
+        File.WriteAllText(conf, "DatabaseDirectory C:/old");
+        File.WriteAllText(conf + ".v1.bak", "ancienne sauvegarde");
+
+        FreshclamConfSupport.InvalidateIfLegacy(conf);
+        FreshclamConfSupport.InvalidateIfLegacy(Path.Combine(_root, "absent.conf"));
+
+        Assert.False(File.Exists(conf));
+        Assert.Equal("DatabaseDirectory C:/old", File.ReadAllText(conf + ".v1.bak"));
+        Assert.False(FreshclamConfSupport.HasUtf8Bom(Path.Combine(_root, "absent.conf")));
+    }
 }

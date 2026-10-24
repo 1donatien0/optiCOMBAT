@@ -1,10 +1,26 @@
+using optiCombat.Tests.TestSupport;
 using System.Collections.Concurrent;
 using optiCombat.Services;
 
 namespace optiCombat.Tests;
 
-public sealed class SecureStoreTests
+/// <remarks>
+/// Collection <c>OpticombatPrefs</c> : la clé HMAC vit sous <see cref="OpticombatDataRoots"/>,
+/// redirigé ici vers un dossier temporaire (jamais la clé réelle du poste).
+/// </remarks>
+[Collection("OpticombatPrefs")]
+public sealed class SecureStoreTests : IDisposable
 {
+    private readonly string _root = Path.Combine(Path.GetTempPath(), "opticombat_ss_root_" + Guid.NewGuid().ToString("N"));
+
+    public SecureStoreTests() => OpticombatDataRoots.TestRootOverride = _root;
+
+    public void Dispose()
+    {
+        OpticombatDataRoots.TestRootOverride = TestDataRoot.Session;
+        try { Directory.Delete(_root, recursive: true); } catch { /* best effort */ }
+    }
+
     private sealed class TestDto
     {
         public string Value { get; set; } = "";

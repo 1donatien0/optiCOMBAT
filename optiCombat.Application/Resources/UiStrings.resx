@@ -368,7 +368,7 @@
   <data name="Platform_MinifilterAbsent" xml:space="preserve"><value>Minifilter noyau absent (stub — PE non interceptés)</value></data>
   <data name="Platform_PlannedUnavailable" xml:space="preserve"><value>Couche plateforme en développement — activation prévue dans 3 à 5 ans. Protection actuelle : surveillance fichiers user-mode.</value></data>
   <data name="Opt_BackupBeforeQuarantine" xml:space="preserve"><value>Copie de sécurité avant quarantaine</value></data>
-  <data name="Opt_BackupBeforeQuarantineSub" xml:space="preserve"><value>Conserve une copie locale (32 Mo max.) dans %LocalAppData%\optiCombat\SafetyBackups.</value></data>
+  <data name="Opt_BackupBeforeQuarantineSub" xml:space="preserve"><value>Conserve une copie locale neutralisée (.ocsafe, non exécutable, 32 Mo max.) dans %LocalAppData%\optiCombat\SafetyBackups.</value></data>
   <data name="Opt_AggressiveSignatures" xml:space="preserve"><value>Mises à jour signatures renforcées</value></data>
   <data name="Opt_AggressiveSignaturesSub" xml:space="preserve"><value>ClamAV toutes les 2 h et règles YARA toutes les 12 h (au lieu de 4 h / 24 h).</value></data>
   <data name="Main_GuardSession" xml:space="preserve"><value>Session de protection en arrière-plan active.</value></data>
@@ -807,7 +807,7 @@
   <data name="Opt_Subtitle" xml:space="preserve"><value>Préférences et comportement de l'application</value></data>
   <data name="Opt_UseClamdCaption" xml:space="preserve"><value>Démon résident : analyses plus rapides, plus de mémoire</value></data>
   <data name="Opt_UseNativeEngine" xml:space="preserve"><value>Cœur natif Rust (expérimental)</value></data>
-  <data name="Opt_UseNativeEngineCaption" xml:space="preserve"><value>Remplace ClamAV + YARA par opticombat.dll ; règles YARA Forge non utilisées, signatures ClamAV via clamd uniquement</value></data>
+  <data name="Opt_UseNativeEngineCaption" xml:space="preserve"><value>Remplace ClamAV + YARA par opticombat_engine.dll ; règles YARA Forge non utilisées, signatures ClamAV via clamd uniquement</value></data>
   <data name="Opt_VirusTotalCaption" xml:space="preserve"><value>Optionnel — enrichit la réputation des menaces</value></data>
   <data name="Opt_VirusTotalKey" xml:space="preserve"><value>Clé API VirusTotal</value></data>
   <data name="Overview_PartialScanWarning" xml:space="preserve"><value>Analyse partielle : certains dossiers système sont inaccessibles sans droits administrateur.</value></data>
@@ -961,4 +961,21 @@ Modifiable à tout moment dans Options → Protection.</value></data>
   <data name="ThemePack_Midnight" xml:space="preserve"><value>Minuit</value></data>
   <data name="ThemePack_Ocean" xml:space="preserve"><value>Océan</value></data>
   <data name="ThemePack_Ember" xml:space="preserve"><value>Braise</value></data>
+  <data name="SigUpd_StepIntel" xml:space="preserve"><value>3. Threat intel abuse.ch (MalwareBazaar, URLhaus, ThreatFox)…</value></data>
+  <data name="SigUpd_LabelIntel" xml:space="preserve"><value>Threat intel</value></data>
+  <data name="ThreatIntel_NoAuthKey" xml:space="preserve"><value>Threat intel abuse.ch désactivée : saisissez votre Auth-Key gratuite dans Options.</value></data>
+  <data name="ThreatIntel_InvalidKey" xml:space="preserve"><value>Auth-Key abuse.ch invalide (16 à 128 caractères alphanumériques).</value></data>
+  <data name="ThreatIntel_KeyRejected" xml:space="preserve"><value>Auth-Key refusée par abuse.ch.</value></data>
+  <data name="ThreatIntel_UpToDate" xml:space="preserve"><value>Feeds abuse.ch déjà à jour.</value></data>
+  <data name="ThreatIntel_AlreadyRunning" xml:space="preserve"><value>Mise à jour des feeds abuse.ch déjà en cours.</value></data>
+  <data name="ThreatIntel_Updated" xml:space="preserve"><value>{0} feed(s) abuse.ch mis à jour.</value></data>
+  <data name="ThreatIntel_TooLarge" xml:space="preserve"><value>Export abuse.ch trop volumineux, ignoré.</value></data>
+  <data name="ThreatIntel_EmptyFeed" xml:space="preserve"><value>Export abuse.ch vide ou invalide : version précédente conservée.</value></data>
+  <data name="ThreatIntel_LastUpdate" xml:space="preserve"><value>Feeds abuse.ch mis à jour le {0}.</value></data>
+  <data name="ThreatIntel_NeverUpdated" xml:space="preserve"><value>Auth-Key enregistrée — feeds pas encore téléchargés.</value></data>
+  <data name="Opt_AbuseChKey" xml:space="preserve"><value>Auth-Key abuse.ch</value></data>
+  <data name="Opt_AbuseChCaption" xml:space="preserve"><value>Optionnel — active la threat intel hors-ligne (MalwareBazaar, URLhaus, ThreatFox) du cœur Rust. Clé gratuite sur auth.abuse.ch.</value></data>
+  <data name="Upd_UpToDate" xml:space="preserve"><value>Version installée : {0} ({1})&#x0D;&#x0A;&#x0D;&#x0A;optiCOMBAT est à jour.&#x0D;&#x0A;&#x0D;&#x0A;• Signatures ClamAV et règles YARA : Antivirus → onglet Signatures.</value></data>
+  <data name="Upd_Available" xml:space="preserve"><value>Version installée : {0} ({1})&#x0D;&#x0A;&#x0D;&#x0A;Nouvelle version disponible : {2}&#x0D;&#x0A;Téléchargez l'installateur signé : {3}&#x0D;&#x0A;&#x0D;&#x0A;La mise à jour se fait sur place : historique, quarantaine et préférences sont conservés.</value></data>
+  <data name="Upd_CheckFailed" xml:space="preserve"><value>Version installée : {0} ({1})&#x0D;&#x0A;&#x0D;&#x0A;Impossible de vérifier les mises à jour : {2}&#x0D;&#x0A;&#x0D;&#x0A;Nouvelle version du programme : {3}</value></data>
 </root>

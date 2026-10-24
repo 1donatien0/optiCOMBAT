@@ -75,7 +75,11 @@ public sealed class SystemCleanAndUpdateCoverageTests
     [Fact]
     public async Task UpdateService_check_returns_not_configured()
     {
-        var result = await new UpdateService().CheckForUpdatesAsync();
+        // Aucune release publiée (404) : message de téléchargement manuel. Jamais de réseau réel.
+        var http = new optiCombat.Tests.TestSupport.FakeHttpHandler();
+        http.Routes[UpdateService.LatestReleaseApiUrl] = () => new System.Net.Http.HttpResponseMessage(System.Net.HttpStatusCode.NotFound);
+        var staging = Path.Combine(Path.GetTempPath(), "oc_upd_" + Guid.NewGuid().ToString("N"));
+        var result = await new UpdateService(new System.Net.Http.HttpClient(http), staging).CheckForUpdatesAsync();
         Assert.Equal(AppUpdateChannelStatus.NotConfigured, result.Status);
         Assert.True(result.Success);
         Assert.False(string.IsNullOrWhiteSpace(result.CurrentVersion));

@@ -51,6 +51,10 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     public string UiCulture { get; set; } = "fr-FR";
     public int FavoriteScanIndex { get; set; }
     public string VirusTotalApiKey { get; set; } = string.Empty;
+    public string AbuseChAuthKey { get; set; } = string.Empty;
+
+    /// <summary>État de la threat intel hors-ligne (clé absente / invalide / dernière mise à jour).</summary>
+    public string ThreatIntelStatus { get; private set; } = string.Empty;
     public string ScheduledStatus { get; private set; } = "";
     public string AppVersionLabel { get; private set; } = string.Empty;
     public string UpdateStatusMessage { get; private set; } = string.Empty;
@@ -81,6 +85,8 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         SignatureStaleDays = prefs.SignatureStaleThresholdDays;
         UiCulture = string.IsNullOrWhiteSpace(prefs.UiCulture) ? "fr-FR" : prefs.UiCulture;
         VirusTotalApiKey = prefs.VirusTotalApiKey ?? string.Empty;
+        AbuseChAuthKey = prefs.AbuseChAuthKey ?? string.Empty;
+        ThreatIntelStatus = BuildThreatIntelStatus();
         FavoriteScanIndex = prefs.FavoriteScanType switch
         {
             ScanType.FullScan => 1,
@@ -230,6 +236,59 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(VirusTotalApiKey));
     }
 
+    /// <summary>
+    /// Enregistre la clé abuse.ch. Une clé valide lance aussitôt un premier téléchargement des
+    /// feeds en arrière-plan. Renvoie <c>false</c> si la clé saisie n'a pas le format attendu
+    /// (elle est tout de même conservée, pour que l'utilisateur la corrige).
+    /// </summary>
+    public bool SaveAbuseChAuthKey(string key)
+    {
+        var prefs = _container.UserPreferencesAccessor.Current;
+        var trimmed = key?.Trim() ?? string.Empty;
+        var changed = !string.Equals(prefs.AbuseChAuthKey, trimmed, StringComparison.Ordinal);
+        prefs.AbuseChAuthKey = trimmed;
+        prefs.Save();
+        AbuseChAuthKey = trimmed;
+        var valid = ThreatIntelFeedUpdater.IsValidAuthKey(trimmed);
+        ThreatIntelStatus = BuildThreatIntelStatus();
+        OnPropertyChanged(nameof(AbuseChAuthKey));
+        OnPropertyChanged(nameof(ThreatIntelStatus));
+        if (valid && changed)
+            LastThreatIntelUpdate = RefreshThreatIntelAsync(force: true);
+        return valid || trimmed.Length == 0;
+    }
+
+    /// <summary>Dernière mise à jour lancée depuis Options (exposée pour les tests).</summary>
+    internal Task? LastThreatIntelUpdate { get; private set; }
+
+    /// <summary>Télécharge les feeds abuse.ch puis met à jour <see cref="ThreatIntelStatus"/>.</summary>
+    public async Task RefreshThreatIntelAsync(bool force = false)
+    {
+        try
+        {
+            var result = await _container.ThreatIntelUpdater.UpdateAsync(force).ConfigureAwait(true);
+            ThreatIntelStatus = result.Skipped || result.Success ? BuildThreatIntelStatus() : result.Message;
+        }
+        catch (Exception ex)
+        {
+            AppLogger.Warn("OptionsViewModel", "RefreshThreatIntelAsync", ex);
+            ThreatIntelStatus = ex.Message;
+        }
+        OnPropertyChanged(nameof(ThreatIntelStatus));
+    }
+
+    private string BuildThreatIntelStatus()
+    {
+        var key = _container.UserPreferencesAccessor.Current.AbuseChAuthKey;
+        if (string.IsNullOrWhiteSpace(key))
+            return LocalizationService.GetString("ThreatIntel_NoAuthKey");
+        if (!ThreatIntelFeedUpdater.IsValidAuthKey(key))
+            return LocalizationService.GetString("ThreatIntel_InvalidKey");
+        return _container.ThreatIntelUpdater.LastUpdateUtc is { } last
+            ? LocalizationService.Format("ThreatIntel_LastUpdate", last.ToLocalTime().ToString("g", System.Globalization.CultureInfo.CurrentCulture))
+            : LocalizationService.GetString("ThreatIntel_NeverUpdated");
+    }
+
     public void SaveThresholds()
     {
         var prefs = _container.UserPreferencesAccessor.Current;
@@ -301,7 +360,7 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
     {
         try
         {
-            var result = await new UpdateService().CheckForUpdatesAsync().ConfigureAwait(true);
+            var result = await _container.AppUpdates.CheckForUpdatesAsync().ConfigureAwait(true);
             UpdateStatusMessage = result.UserMessage;
         }
         catch (Exception ex)
@@ -396,11 +455,13 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         try
         {
             Directory.CreateDirectory(AppLogger.LogDirectory);
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            var opened = SystemShell.Current.Run(new System.Diagnostics.ProcessStartInfo
             {
                 FileName = AppLogger.LogDirectory,
                 UseShellExecute = true
-            });
+            }, timeoutMs: null);
+            if (!opened.Started)
+                throw new IOException(AppLogger.LogDirectory);
         }
         catch (Exception ex)
         {
@@ -424,7 +485,7 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
 
         try
         {
-            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo { FileName = path, UseShellExecute = true });
+            SystemShell.Current.Run(new System.Diagnostics.ProcessStartInfo { FileName = path, UseShellExecute = true }, timeoutMs: null);
         }
         catch (Exception ex)
         {
@@ -433,33 +494,30 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         }
     }
 
-    private static bool IsAutoStartRegistered()
+    private const string AutoStartRunKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
+    private const string AutoStartValueName = "optiCombat";
+
+    /// <summary>Tests uniquement : exécutable inscrit au démarrage.</summary>
+    internal static string? AutoStartExecutableOverride { get; set; }
+
+    internal static bool IsAutoStartRegistered()
     {
-        try
-        {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"SOFTWARE\Microsoft\Windows\CurrentVersion\Run", false);
-            return key?.GetValue("optiCombat") != null;
-        }
+        try { return SystemShell.Current.GetCurrentUserValue(AutoStartRunKey, AutoStartValueName) != null; }
         catch { return false; }
     }
 
-    private static void SetAutoStart(bool enable)
+    internal static void SetAutoStart(bool enable)
     {
-        const string regKey = @"SOFTWARE\Microsoft\Windows\CurrentVersion\Run";
-        const string appName = "optiCombat";
         try
         {
-            using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(regKey, true)
-                ?? Microsoft.Win32.Registry.CurrentUser.CreateSubKey(regKey);
-            if (key == null) return;
             if (enable)
             {
-                var exe = Environment.ProcessPath;
+                var exe = AutoStartExecutableOverride ?? Environment.ProcessPath;
                 if (!string.IsNullOrWhiteSpace(exe))
-                    key.SetValue(appName, $"\"{exe}\"");
+                    SystemShell.Current.SetCurrentUserValue(AutoStartRunKey, AutoStartValueName, $"\"{exe}\"", Microsoft.Win32.RegistryValueKind.String);
             }
             else
-                key.DeleteValue(appName, throwOnMissingValue: false);
+                SystemShell.Current.DeleteCurrentUserValue(AutoStartRunKey, AutoStartValueName);
         }
         catch (Exception ex)
         {
@@ -490,6 +548,8 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         OnPropertyChanged(nameof(UiCulture));
         OnPropertyChanged(nameof(FavoriteScanIndex));
         OnPropertyChanged(nameof(VirusTotalApiKey));
+        OnPropertyChanged(nameof(AbuseChAuthKey));
+        OnPropertyChanged(nameof(ThreatIntelStatus));
         OnPropertyChanged(nameof(AppVersionLabel));
         OnPropertyChanged(nameof(HighContrast));
         OnPropertyChanged(nameof(ThemePresetId));

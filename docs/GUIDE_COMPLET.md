@@ -38,7 +38,7 @@
 | Métier partagé | `optiCombat.Application` (.NET 8, `net8.0-windows10.0.17763.0`) |
 | Contrats IPC | `optiCombat.Platform` (.NET 8, portable) |
 | Service Windows | `optiCombat.Service` (Microsoft.Extensions.Hosting.WindowsServices) — **inactif par défaut** |
-| Moteurs | ClamAV 1.4.x (clamscan / clamd), YARA 4.5.x, cœur **Rust** `opticombat.dll` (FFI, optionnel) |
+| Moteurs | ClamAV 1.4.x (clamscan / clamd), YARA 4.5.x, cœur **Rust** `opticombat_engine.dll` (FFI, optionnel) |
 | Natif | `native/optiCombat.AmsiProvider` (C++), `native/optiCombat.Minifilter` (stub WDK) |
 
 La couche métier (models, services, ViewModels) est `optiCombat.Application`. Architecture du shell : [SHELL_WINUI.md](SHELL_WINUI.md).
@@ -47,7 +47,7 @@ La couche métier (models, services, ViewModels) est `optiCombat.Application`. A
 optiCombat.WinUI ──┐
 optiCombat.Service ┼──► optiCombat.Application ──► optiCombat.Platform
 optiCombat.Tests ──┘              │
-                                  └──► opticombat.dll (Rust, P/Invoke, si présente)
+                                  └──► opticombat_engine.dll (Rust, P/Invoke, si présente)
 ```
 
 ### Architecture plateforme (protection système)
@@ -75,6 +75,7 @@ optiCombat.Service.exe  →  optiCombat.exe --service-host
 | `ThreatRepairService` | Quarantaine + recours Defender ciblé (`MpCmdRun`) |
 | `WindowsDefenderExclusionService` | Exclusions Defender **opt-in** — Options, `--defender-exclusions`, script manuel |
 | `CloudThreatIntelService` / `ThreatReputationService` | Réputation VirusTotal (hash SHA-256, clé API utilisateur) |
+| `ThreatIntelFeedUpdater` | Téléchargement des exports abuse.ch (Auth-Key dans Options) vers `%LocalAppData%\optiCombat\threat_intel` |
 
 ### Arborescence du dépôt
 
@@ -206,15 +207,17 @@ Codes de sortie `clamscan` : **0** aucune menace · **1** menace(s) · **2** err
 1. vérifie l’intégrité (`YaraForgePackageIntegrity`) : en-tête ZIP, taille annoncée, **digest SHA-256** publié par GitHub, taille ≤ 256 Mo — un paquet invalide est **rejeté** et les règles actuelles conservées ;
 2. extrait les `.yar` et invalide le cache compilé (`_compiled.yarc` / stamp, `YaraRulesCacheSupport`).
 
-### 3.4 Cœur Rust (`opticombat.dll`)
+### 3.4 Cœur Rust (`opticombat_engine.dll`)
 
-`ScanOrchestrator` délègue au cœur Rust **si `opticombat.dll` est déployée** à côté de l’exe (`UseOptiCombatEngine()` dans `ServiceRegistration`) ; sinon ClamAV et YARA tournent en parallèle. Un chargement bloqué (Smart App Control, `0x800711C7`) ne fait jamais planter l’UI : repli automatique.
+`ScanOrchestrator` délègue au cœur Rust **si `opticombat_engine.dll` est déployée** à côté de l’exe (`UseOptiCombatEngine()` dans `ServiceRegistration`) ; sinon ClamAV et YARA tournent en parallèle. Un chargement bloqué (Smart App Control, `0x800711C7`) ne fait jamais planter l’UI : repli automatique.
 
 ```powershell
 .\scripts\build-engine.ps1     # cargo build -p opticombat-ffi --release + copie de la DLL
 ```
 
 Détails : [engine/README.md](../engine/README.md).
+
+Le cœur ne contacte pas le réseau. Si une Auth-Key abuse.ch est enregistrée dans Options, le shell télécharge MalwareBazaar, URLhaus et ThreatFox toutes les 12 heures (6 heures minimum) dans `%LocalAppData%\optiCombat\threat_intel`, puis appelle `opticombat_load_threat_intel`. Sans clé, le moteur IOC reste vide. L’étape IOC ne s’applique qu’aux scripts et aux fichiers de type inconnu.
 
 ---
 
@@ -276,7 +279,7 @@ Les sélecteurs de fichier / dossier (analyse, exclusions, exports) sont les bo�
 
 ```
 AntivirusViewModel → ScanOrchestrator
-    ├─ opticombat.dll présente → cœur Rust (ClamAV/clamd + YARA + heuristiques + ML + réputation)
+    ├─ opticombat_engine.dll présente → cœur Rust (ClamAV/clamd + YARA + heuristiques + ML + réputation + IOC abuse.ch si les feeds sont chargés)
     └─ sinon, en parallèle (Task.WhenAll) :
          ├─ CompositeClamAvBackend (clamd TCP 127.0.0.1:3310 → repli clamscan.exe)
          └─ YaraEngine (un seul yara64.exe --recursive, règles compilées en cache)
@@ -292,7 +295,7 @@ AntivirusViewModel → ScanOrchestrator
 ### 4.6 Mise à jour des signatures
 
 - **Manuelle** : onglet **Signatures** ou carte **Mise à jour** de l’accueil — `SignatureUpdateCoordinator` enchaîne freshclam puis YARA-Forge (délai max 5 min).
-- **Automatique** (`SignatureUpdatePolicy`) : ClamAV toutes les **4 h**, YARA-Forge toutes les **24 h** ; mode **agressif** (Options) : **2 h** / **12 h**. **Options → Mise à jour auto des signatures** coupe ou réactive les deux.
+- **Automatique** (`SignatureUpdatePolicy`) : ClamAV toutes les **4 h**, YARA-Forge toutes les **24 h** ; mode **agressif** (Options) : **2 h** / **12 h**. **Options → Mise à jour auto des signatures** coupe ou réactive les deux. Avec une Auth-Key abuse.ch, la même mise à jour récupère aussi les feeds threat intel (12 h, 6 h minimum).
 
 ### 4.7 Exclusions
 
@@ -532,7 +535,7 @@ Les scripts de poste de dev non versionnés (`unblock-dev-build`, `sign-dev-loca
 
 ### Checklist release
 
-- [ ] `dotnet test` Release vert (**618 / 618**) ; CI verte (format, couverture .NET ≥ 62 %, Rust ≥ 65 %, clippy, CodeQL, Gitleaks)
+- [ ] `dotnet test` Release vert (**943** tests, couverture lignes Windows **89,8 %**) ; CI verte (format, couverture .NET ≥ 85 %, Rust ≥ 90 %, clippy, CodeQL, Gitleaks)
 - [ ] `.\scripts\verify-runtime-deps.ps1` vert sur le dossier publish
 - [ ] `clamscan.exe`, `freshclam.exe`, `clamd.exe`, `yara64.exe`, règles `.yar`
 - [ ] Base `clamav\database\` présente, ou MAJ signatures vérifiée au premier lancement
@@ -550,7 +553,7 @@ Sans certificat, Windows affiche « Éditeur inconnu ». Voir [SIGNING.md](SIGNI
 
 | Canal | Comportement |
 |---|---|
-| Installateur Inno | Choix FR / EN → `HKCU\Software\optiCombat\UiCulture` (culture du premier lancement) |
+| Installateur Inno | Boîte « English / Français » toujours affichée, présélectionnée sur la langue de Windows (ou celle de l'installation précédente) ; textes de l'assistant traduits. Choix écrit dans `HKCU\Software\optiCombat\UiCulture` avec `UiCulturePending=1` : au lancement suivant, l'application adopte cette langue même si une autre était enregistrée (réinstallation dans une autre langue), puis efface le marqueur. Sans préférence ni installateur : langue de Windows (français si Windows est en français, anglais sinon). |
 | Options → Langue de l’interface | Français / English, appliqué **immédiatement** à toutes les pages, sans redémarrage |
 | Ressources | `optiCombat.Application/Resources/UiStrings.resx` (FR) + `UiStrings.en.resx` (EN) — **896** clés chacune, parité vérifiée par tests |
 | Menu contextuel | « Scanner avec optiCOMBAT » / « Scan with optiCOMBAT » |
@@ -595,20 +598,20 @@ Non traduit volontairement : sorties brutes ClamAV / freshclam / YARA, noms de m
 | Inno Setup | 6.x | Freeware | Installateur |
 | Crates Rust (goblin, aho-corasick, aes-gcm, ed25519…) | voir `engine/Cargo.lock` | MIT / Apache-2.0 | Cœur moteur |
 
-Tests : xUnit, Moq, coverlet. Mise à jour de l’application (`UpdateService`) : **canal OTA non configuré** volontairement (dossier de staging uniquement).
+Tests : xUnit, Moq, coverlet. Mise à jour de l’application (`UpdateService`) : interrogation de la dernière release GitHub. Rien n’est téléchargé ni installé ; l’utilisateur est renvoyé vers la page de la release.
 
 ---
 
 ## 11. Périmètre fonctionnel v1.0
 
-- **Analyse** — rapide, complète, fichier, dossier, USB/SD, menu contextuel ; ClamAV (clamd / clamscan) + YARA ; cœur Rust si `opticombat.dll` présente.
-- **Protection** — RTP user-mode + surveillance des processus, anti-sabotage, quarantaine AES-GCM, exclusions DPAPI, analyse planifiée, posture /100 avec corrections en un clic, mode complément de Defender, réputation VirusTotal (opt-in), mode jeu.
+- **Analyse** — rapide, complète, fichier, dossier, USB/SD, menu contextuel ; ClamAV (clamd / clamscan) + YARA ; cœur Rust si `opticombat_engine.dll` présente.
+- **Protection** — RTP user-mode + surveillance des processus, anti-sabotage, quarantaine AES-GCM, exclusions DPAPI, analyse planifiée, posture /100 avec corrections en un clic, mode complément de Defender, réputation VirusTotal (opt-in), threat intel abuse.ch hors-ligne (Auth-Key opt-in), mode jeu.
 - **Optimisation** — nettoyage (temporaires Windows / utilisateur, caches Edge, Chrome, Firefox, Brave, Opera, Vivaldi, Arc, corbeille, journaux Windows, cache Windows Update, cache DNS, historique de navigation Chromium), mises à jour des applications (winget) et 13 tweaks Windows.
 - **Historique** — timeline chiffrée, filtres, traitement des menaces, exports HTML / PDF.
 - **Interface** — WinUI 3 mono-fenêtre Combat Aqua, clair / sombre / contraste renforcé, entièrement traduite FR / EN, guide de premier lancement, zone de notification.
 - **Publication** — installateur Inno self-contained, mise à jour sur place.
 
-Hors périmètre v1.0 : couche plateforme (service, AMSI, minifiltre), mise à jour OTA de l’application.
+Hors périmètre v1.0 : couche plateforme (service, AMSI, minifiltre). La vérification de version interroge la dernière release GitHub et ouvre sa page ; elle n’installe rien.
 
 ---
 
@@ -619,9 +622,10 @@ dotnet test optiCombat.Tests\optiCombat.Tests.csproj -c Release
 cargo test --workspace --manifest-path engine/Cargo.toml
 ```
 
-- **618 / 618** cas de test C# Release verts (2026-10-20), **TreatWarningsAsErrors** et NetAnalyzers `latest-recommended`.
-- Couverture coverlet (Application + Platform, WinUI exclu) : **66,4 %** des lignes (7509 / 11302), **62,2 %** des branches — plancher CI **62 %**, cible **65 %**.
-- **62** tests Rust verts (`cargo test --workspace --manifest-path engine/Cargo.toml`).
+- **943** cas de test C# Release (2026-10-24), **TreatWarningsAsErrors** et NetAnalyzers `latest-recommended`.
+- Couverture coverlet (Application + Platform, WinUI exclu) : plancher CI **85 %** des lignes, cible **90 %**. Mesure Linux : **87,1 %** des lignes (10 393 / 11 939) et **80,5 %** des branches (16 tests réservés à Windows non exécutés). Mesure Windows (Release, mêmes réglages que la CI, 943 tests verts) : **89,8 %** des lignes (10 724 / 11 939) et **84,3 %** des branches. Le plancher de 85 % est tenu, la cible de 90 % non.
+- Seule exclusion de couverture : `WindowsSystemShell`, fine enveloppe `Process` / `Registry` sans logique (`[ExcludeFromCodeCoverage]` justifié). Toute la logique des actions système est testée via un `ISystemShell` enregistreur.
+- Rust : **170** tests et 1 doctest, couverture de lignes **92,6 %** (plancher CI 90 %, cible 95 %).
 
 | Domaine | Tests représentatifs |
 |---|---|
@@ -642,7 +646,7 @@ cargo test --workspace --manifest-path engine/Cargo.toml
 
 | Workflow | Déclencheur | Contenu |
 |---|---|---|
-| `ci.yml` | push / PR `main`, `dev` | Contrôle des thèmes WinUI, build Release, tests + couverture (**plancher 62 %**, cible 65 %), format C# / Rust, clippy `-D warnings`, tests + couverture Rust (**plancher 65 %**, cible 75 %), `cargo audit` ; sur `main` : publish win-x64 + SBOM CycloneDX (artefacts) |
+| `ci.yml` | push / PR `main`, `dev` | Contrôle des thèmes WinUI, build Release, tests + couverture (**plancher 85 %**, cible 90 %), format C# / Rust, clippy `-D warnings`, tests + couverture Rust (**plancher 90 %**, cible 95 %), `cargo audit` ; sur `main` : publish win-x64 + SBOM CycloneDX (artefacts) |
 | `codeql.yml` | push / PR + hebdo | CodeQL C#, Rust, GitHub Actions |
 | `gitleaks.yml` | push / PR + hebdo | Recherche de secrets |
 | `dependency-review.yml` | PR | Bloque les dépendances vulnérables *high* |

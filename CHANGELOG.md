@@ -6,28 +6,47 @@ Format basé sur [Keep a Changelog](https://keepachangelog.com/fr/1.1.0/).
 
 ### Added
 
-- **Threat Intel hors-ligne — couche 3 du pipeline de détection** (MalwareBazaar, URLhaus, ThreatFox) :
-  - Nouvelle crate `ioc-engine` : types `IocKind` (Url/Domain/Ip), trait `IocFeed`, moteur `IocEngine::check_all()`
-  - `ioc-engine::urlhaus` : chargement des feeds URLhaus (format texte une URL/ligne et CSV officiel, colonne 2)
-  - `ioc-engine::threatfox` : chargement du CSV ThreatFox (formats court 3 colonnes et long 15 colonnes, colonnes réelles de l'export 2026-10) ; gestion des IOC `ip:port`
-  - `ioc-engine::extractor` : extraction d'URLs, domaines et IPv4 publiques (filtre RFC-1918 + loopback) depuis le contenu textuel ; heuristique binaire (null-byte > 5 %) ; plafonds MAX_URLS = 512, MAX_IPS = 256
-  - Crate `reputation` étendue : `MalwareBazaarDb` chargeable depuis le CSV officiel (sha256 colonne 1, famille colonne 8) ou une liste simple (un hash/ligne) ; implémente `ReputationSource`
-  - `dispatcher` : étape 6 (IOC réseau) pour `FileKind::Script | Unknown`, seulement si un feed est chargé. Le moteur IOC émet `Malicious` si une confiance est ≥ 75, sinon `Suspicious`. Le corrélateur ne traite pas `ioc` comme un moteur décisif
-  - `dispatcher` : constructeur `with_ioc(reputation, ioc)` ; `with_reputation()` initialise `ioc: IocEngine::empty()`
-  - Les feeds MalwareBazaar, URLhaus et ThreatFox sont lus depuis des fichiers locaux fournis par l'appelant. Le shell ne les télécharge pas. Le cœur Rust ne fait aucun appel réseau
-- Tests de couverture : Historique (`HistoryViewModel`), export HTML, nettoyage (analyse, pas d’exécution destructive), signatures / `UpdateService`, posture, modèles (`ByteSizeFormat`, `ScanProgress`, `ClamdConfSupport`, `ThreatInfo`, …)
-- Tests des ViewModels du shell (Antivirus, Options, Nettoyage, Mises à jour, Tweaks) via `TestSupport/IsolatedServices` : conteneur complet dans un dossier temporaire, moteurs ClamAV / YARA, winget et API GitHub factices
-- Tests : pipeline `ScanOrchestrator` (YARA, listes de fichiers, exclusions), `RiskScoringService`, restauration de quarantaine, rapports PDF, routage des toasts, flux complet YARA-Forge (intégrité SHA-256), analyse de la sortie winget
-- CI : job **Format** (`dotnet format whitespace`, `cargo fmt --check`), `cargo clippy -D warnings`, couverture Rust `cargo-llvm-cov` (plancher 65 %, cible 75 %)
+- **Téléchargement des flux abuse.ch** : `ThreatIntelFeedUpdater` récupère MalwareBazaar (`recent.csv`), URLhaus (`online.csv`) et ThreatFox (`full.csv.zip`) avec l'Auth-Key abuse.ch (champ dans les Options, stocké dans les préférences), toutes les 12 h (6 h minimum), taille plafonnée, clé masquée dans les journaux ; intégré à la mise à jour des signatures (étape « Threat intel »).
+- **Chargement Threat Intel dans le moteur natif** : `ThreatIntelBundle` (crate `dispatcher`), `Dispatcher::with_threat_intel_dir`, variable `OPTICOMBAT_THREAT_INTEL_DIR`, FFI `opticombat_load_threat_intel` / `opticombat_threat_intel_stats`, option CLI `--intel`. Les détections MalwareBazaar remontent avec `DetectedBy = "MalwareBazaar"`.
+- **Vérification des nouvelles versions** : `UpdateService` interroge la dernière release GitHub et oriente vers la page de téléchargement (rien n'est installé automatiquement).
+- **Infrastructure de tests** : exécutable factice `optiCombat.TestFakes` (winget, freshclam, clamscan, YARA, schtasks, clamd), faux serveur clamd TCP côté Rust, fixtures PE ; 943 tests C#, 170 tests Rust.
+- **`ISystemShell`** : processus et registre (tweaks, exclusions Defender, `sc.exe`, AMSI / minifiltre, relance UAC, langue, démarrage automatique, menu contextuel, MpCmdRun) passent par un seul point, remplacé dans les tests par un enregistreur (`RecordingShell`) qui vérifie la commande ou la clé exacte sans rien exécuter. Seule exclusion de couverture : l'enveloppe `WindowsSystemShell`, sans logique.
+- **Garde-fou global des tests** (`TestSupport/TestDataRoot`) : toute l'exécution des tests est redirigée vers un `%APPDATA%` / `%LOCALAPPDATA%` temporaire et utilise un shell inerte — même un test sans redirection explicite ne peut plus écrire dans le profil réel ni lancer de processus système.
+- Tests des chemins d'échec de la quarantaine, de la surface IPC (`Dispatch`), de `SecureStore`, du nettoyage sur arborescence factice, des toasts, du statut plateforme, des actions système, des lecteurs USB, de la surveillance des processus et de la bascule service / protection locale.
+- **Threat intel hors-ligne dans le cœur Rust** : crate `ioc-engine` (`IocKind`, `IocFeed`, `IocEngine::check_all`), parseurs URLhaus (texte et CSV, URL en colonne 2) et ThreatFox (format court et export réel à 15 colonnes), `MalwareBazaarDb` (SHA-256 en colonne 1, famille en colonne 8). L'étape IOC ne concerne que les scripts et les fichiers de type inconnu, et seulement si un feed est chargé. Le cœur Rust ne fait aucun appel réseau : c'est le shell qui écrit les CSV.
+- Tests de couverture : Historique (`HistoryViewModel`), export HTML, nettoyage, signatures / `UpdateService`, posture, modèles (`ByteSizeFormat`, `ScanProgress`, `ClamdConfSupport`, `ThreatInfo`, …)
+- Tests des ViewModels du shell via `TestSupport/IsolatedServices` : conteneur dans un dossier temporaire, moteurs et API GitHub factices
+- Tests : pipeline `ScanOrchestrator`, `RiskScoringService`, restauration de quarantaine, rapports PDF, toasts, YARA-Forge, sortie winget
+- CI : job **Format**, `cargo clippy -D warnings`, couverture Rust `cargo llvm-cov`
 - Architecture du shell WinUI 3 : `docs/SHELL_WINUI.md`
 
 ### Changed
 
-- CI : plancher de couverture lignes .NET **62 %**, cible **65 %** (au lieu de 53 % / 60 %)
-- Suite Release : **618 / 618** tests C# et **62** tests Rust verts (au lieu de 449 / 62) ; couverture .NET **66,4 %** des lignes
+- **Bibliothèque native renommée `opticombat_engine.dll`** (`libopticombat_engine.so`) : `opticombat.dll` entrait en collision avec `optiCombat.dll` sur NTFS (insensible à la casse) dans le dossier de publication.
+- Planchers de couverture CI : **.NET 85 %** (cible 90 %), **Rust 90 %** (cible 95 %). Mesures : .NET **87,1 %** des lignes et **80,5 %** des branches sous Linux (16 tests réservés à Windows non exécutés), **89,8 %** des lignes (10 724 / 11 939) et **84,3 %** des branches sous Windows (943 tests verts ; plancher 85 % tenu, cible 90 % non) ; Rust **92,6 %**.
+- **Copies de sécurité neutralisées** : l'option « Copie de sécurité avant quarantaine » écrit désormais `<nom>.ocsafe`, contenu masqué (XOR 0x5A, `ThreatRemediationService.DecodeSafetyCopy` pour le récupérer), au lieu d'une copie exécutable en clair.
+- `PlatformProtectionStatusService.Evaluate` : la décision est séparée des sondes système (registre AMSI, `fltmc`, service Defender, IPC).
 - `AntivirusViewModel`, `OptionsViewModel`, `CleanViewModel`, `UpdatesViewModel`, `TweaksViewModel` et `WinUiThemePacks` déplacés dans `optiCombat.Application` (namespace inchangé) : mesurés par la couverture ; `OptionsViewModel` pilote le thème via `IShellThemeController`
 - `UserPreferences` / `ExclusionSettings` : racine de stockage redirigeable pour les tests (`OpticombatDataRoots`, interne)
 - Moteur Rust : `cargo fmt` appliqué, MSRV 1.74 respectée dans `qualify` (`map_or` au lieu de `is_none_or`)
+
+### Fixed
+
+- **Langue de l'installateur** : la boîte « English / Français » ne s'affichait que si aucune langue ne correspondait à Windows (`ShowLanguageDialog=auto`) — sur un Windows français, impossible d'installer en anglais. Elle s'affiche désormais toujours, présélectionnée sur la langue de Windows. Les cases et raccourcis de l'assistant (bureau, démarrage, signatures, « Lancer… », « Désinstaller… ») sont traduits. Le choix fait à la réinstallation est appliqué par l'application même si une autre langue était enregistrée dans ses préférences (marqueur `UiCulturePending`). Sans préférence ni installateur, la langue de Windows est utilisée au lieu du français imposé.
+- **Test instable `ProtectionPipeClientTests`** : le faux serveur créait chaque instance du tube trop tard (le client pouvait se connecter avant) ; l'instance suivante est créée dès qu'une connexion est acceptée.
+- **Quarantaine — fichier perdu** : si l'écriture du manifeste échouait, l'original était déjà supprimé et le blob chiffré effacé au retour en arrière. Ordre corrigé : blob, puis manifeste, puis suppression de l'original.
+- **Quarantaine — manifeste rejeté écrasé** : un manifeste rejeté (HMAC invalide, non signé, ou clé DPAPI régénérée) n'était jamais copié malgré le commentaire ; deux enregistrements écrasaient le manifeste puis son `.bak`. Il est conservé en `.rejected-…` avant tout enregistrement.
+- **Boutons des notifications sans effet** : « Ouvrir l'antivirus », « Ouvrir », « Historique » et « Ignorer » ne faisaient rien (`ToastArguments.Get` lève une exception sur une clé absente). Seul « Mettre en quarantaine » fonctionnait.
+- **Attente de 5 s par fichier scanné** : avec le service de protection désactivé (toutes les installations), chaque scan temps réel / processus / USB sondait d'abord le tube IPC, qui réessaie jusqu'au délai de 5 s. L'IPC n'est tenté que si le service est activé, avec 30 s de pause après un échec.
+- **Copies de sécurité en double** : RTP, surveillance des processus et remédiation créaient une copie puis appelaient la quarantaine, qui en créait une seconde.
+- **Lecteurs USB scannés deux fois** : le minuteur et l'événement WMI modifiaient le même ensemble sans verrou ; les nouveaux lecteurs sont maintenant réservés de façon atomique.
+- **Nettoyage « Historique » seul ignoré** : `CleanSelection.AnySelected` ne tenait pas compte de l'historique de navigation.
+- **IPC `ScanBuffer`** : un base64 invalide levait une exception au lieu d'une réponse d'erreur ; un nom de contenu avec caractères interdits faisait échouer l'écriture du fichier temporaire.
+- **Analyse Defender ciblée** : le chemin passé à `MpCmdRun` était concaténé entre guillemets (injection d'options possible) ; il est passé comme argument distinct.
+- **Tests qui touchaient le poste** : le test du menu contextuel écrivait puis supprimait le vrai menu « Scanner avec optiCombat » ; plusieurs tests enregistraient les vraies préférences (`UserPreferences.Current.Save()`) ; `SecureStore` et les copies de sécurité utilisaient la vraie clé HMAC et le vrai `%LOCALAPPDATA%`.
+- Les tests n'écrivent plus dans le `%LOCALAPPDATA%` réel (configuration clamd/freshclam, exclusions) et ne modifient plus les exclusions Defender sous Windows.
+- Test instable `ClamScanLineParser` (rapports `Progress<T>` asynchrones).
+- Plafonds mémoire sur les flux IOC (2 millions d'entrées) et les hachages MalwareBazaar.
 
 ### Security (audit 360 — 2026-10-21)
 

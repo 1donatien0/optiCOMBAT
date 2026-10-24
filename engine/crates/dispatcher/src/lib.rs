@@ -16,6 +16,9 @@
 use std::io::{Cursor, Read};
 use std::path::Path;
 
+pub mod threat_intel;
+pub use threat_intel::{ThreatIntelBundle, ThreatIntelStats};
+
 use clamav::CompositeClamAvBackend;
 use correlator::{correlate, FinalDecision};
 use engine_core::{
@@ -71,11 +74,43 @@ pub struct Dispatcher {
     reputation: ReputationEngine,
     /// Moteur IOC réseau (URLhaus + ThreatFox) — vide si aucune liste n'est disponible.
     ioc: IocEngine,
+    /// Compteurs de la threat intel chargée (zéro si aucun dossier).
+    intel_stats: ThreatIntelStats,
 }
 
 impl Dispatcher {
+    /// Dispatcher par défaut. Si `OPTICOMBAT_THREAT_INTEL_DIR` désigne un dossier,
+    /// les feeds abuse.ch qu'il contient sont chargés (voir [`threat_intel`]).
     pub fn new() -> Self {
-        Self::with_reputation(ReputationEngine::from_env())
+        match ThreatIntelBundle::dir_from_env() {
+            Some(dir) => Self::with_threat_intel_dir(&dir),
+            None => Self::with_reputation(ReputationEngine::from_env()),
+        }
+    }
+
+    /// Dispatcher alimenté par les feeds abuse.ch d'un dossier local
+    /// (MalwareBazaar → réputation, URLhaus/ThreatFox → IOC).
+    pub fn with_threat_intel_dir(dir: &Path) -> Self {
+        Self::with_threat_intel(
+            ReputationEngine::from_env(),
+            ThreatIntelBundle::load_dir(dir),
+        )
+    }
+
+    /// Dispatcher alimenté par un bundle déjà chargé.
+    pub fn with_threat_intel(mut reputation: ReputationEngine, bundle: ThreatIntelBundle) -> Self {
+        let ThreatIntelBundle { bazaar, ioc, stats } = bundle;
+        if bazaar.hash_count() > 0 {
+            reputation.push_source(Box::new(bazaar));
+        }
+        let mut d = Self::with_ioc(reputation, ioc);
+        d.intel_stats = stats;
+        d
+    }
+
+    /// Compteurs de la threat intel actuellement chargée.
+    pub fn threat_intel_stats(&self) -> ThreatIntelStats {
+        self.intel_stats
     }
 
     /// Vrai si un démon clamd (signatures ClamAV complètes) répond. Sinon le
@@ -94,6 +129,7 @@ impl Dispatcher {
             ml: Classifier::new(),
             ioc,
             reputation,
+            intel_stats: ThreatIntelStats::default(),
         }
     }
 
@@ -106,6 +142,7 @@ impl Dispatcher {
             ml: Classifier::new(),
             ioc: IocEngine::empty(),
             reputation,
+            intel_stats: ThreatIntelStats::default(),
         }
     }
 
@@ -507,6 +544,183 @@ mod tests {
             d.verdict
         );
         let _ = std::fs::remove_file(p);
+    }
+
+    fn intel_dir(tag: &str) -> std::path::PathBuf {
+        use std::sync::atomic::{AtomicU32, Ordering};
+        static N: AtomicU32 = AtomicU32::new(0);
+        let d = std::env::temp_dir().join(format!(
+            "oc_disp_ti_{tag}_{}_{}",
+            std::process::id(),
+            N.fetch_add(1, Ordering::Relaxed)
+        ));
+        std::fs::create_dir_all(&d).unwrap();
+        d
+    }
+
+    #[test]
+    fn hash_malwarebazaar_du_dossier_rend_le_fichier_malveillant() {
+        let payload = b"charge utile de test opticombat malwarebazaar";
+        let sha = ReputationEngine::sha256_hex(payload);
+        let dir = intel_dir("mb");
+        std::fs::write(
+            dir.join(threat_intel::MALWAREBAZAAR_CSV),
+            format!("\"2026-10-23 10:00:00\", \"{sha}\", \"m\", \"s\", \"r\", \"x.bin\", \"exe\", \"mime\", \"Formbook\", \"n/a\"\n"),
+        )
+        .unwrap();
+        let d = Dispatcher::with_threat_intel_dir(&dir);
+        assert_eq!(d.threat_intel_stats().malwarebazaar_hashes, 1);
+        let p = tmp(payload, "bin");
+        let decision = d.scan_path(&p).unwrap();
+        assert_eq!(decision.verdict, Verdict::Malicious);
+        assert!(decision
+            .reasons
+            .iter()
+            .any(|r| r.engine == "reputation" && r.name == "MalwareBazaar:Formbook"));
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn ioc_threatfox_du_dossier_signale_le_script() {
+        let dir = intel_dir("tf");
+        std::fs::write(
+            dir.join(threat_intel::THREATFOX_CSV),
+            "\"2026-10-23 10:00:00\", \"1\", \"https://c2.example.net/gate.php\", \"url\", \"botnet_cc\", \"win.x\", \"None\", \"XWorm\", \"\", \"90\", \"0\", \"\", \"\", \"0\", \"r\"\n",
+        )
+        .unwrap();
+        let d = Dispatcher::with_threat_intel_dir(&dir);
+        assert_eq!(d.threat_intel_stats().threatfox_iocs, 1);
+        let p = tmp(
+            b"$u='https://c2.example.net/gate.php'; Write-Host $u",
+            "ps1",
+        );
+        let decision = d.scan_path(&p).unwrap();
+        // Indicateur réseau seul : pas une preuve → Suspicious, avec l'explication IOC.
+        assert_eq!(decision.verdict, Verdict::Suspicious);
+        assert!(decision
+            .reasons
+            .iter()
+            .any(|r| r.engine == "ioc" && r.name == "IOC.ThreatFox"));
+        let _ = std::fs::remove_file(p);
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    fn zip_bytes(entries: &[(&str, &[u8])], dirs: &[&str]) -> Vec<u8> {
+        use std::io::Write as _;
+        let mut buf = std::io::Cursor::new(Vec::new());
+        {
+            let mut z = zip::ZipWriter::new(&mut buf);
+            let opts = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Deflated);
+            for d in dirs {
+                z.add_directory(*d, opts).unwrap();
+            }
+            for (name, data) in entries {
+                z.start_file(*name, opts).unwrap();
+                z.write_all(data).unwrap();
+            }
+            z.finish().unwrap();
+        }
+        buf.into_inner()
+    }
+
+    #[test]
+    fn archive_zip_membres_analyses_et_traces() {
+        let inner = zip_bytes(
+            &[("deep.ps1", b"powershell -enc ZQ== ; Invoke-Expression $x")],
+            &[],
+        );
+        let outer = zip_bytes(
+            &[
+                ("run.ps1", b"powershell -enc ZQ== ; Invoke-Expression $x"),
+                ("readme.txt", b"bonjour"),
+                ("nested.zip", &inner),
+            ],
+            &["dossier/"],
+        );
+        let p = tmp(&outer, "zip");
+        let d = Dispatcher::with_reputation(ReputationEngine::from_env())
+            .scan_path(&p)
+            .unwrap();
+        assert_eq!(d.verdict, Verdict::Suspicious, "{:?}", d.reasons);
+        assert!(d
+            .reasons
+            .iter()
+            .any(|r| r.explanation.starts_with("[zip:run.ps1]")));
+        // Membre d'une archive imbriquée (profondeur 2) : double préfixe.
+        assert!(
+            d.reasons
+                .iter()
+                .any(|r| r.explanation.starts_with("[zip:nested.zip] [zip:deep.ps1]")),
+            "{:?}",
+            d.reasons
+        );
+        let _ = std::fs::remove_file(p);
+    }
+
+    #[test]
+    fn archive_corrompue_et_profondeur_maximale() {
+        let disp = Dispatcher::with_reputation(ReputationEngine::from_env());
+        // En-tête ZIP sans répertoire central : ignorée, pas d'erreur.
+        assert!(disp.scan_archive(b"PK\x03\x04 tronque", 0).is_empty());
+        // À la profondeur maximale, une archive n'est plus déballée.
+        let z = zip_bytes(&[("a.ps1", b"powershell -enc ZQ==")], &[]);
+        let r = disp.scan_all(Path::new("x.zip"), &z, MAX_ARCHIVE_DEPTH);
+        assert!(r.iter().all(|e| e
+            .detections
+            .iter()
+            .all(|d| !d.explanation.starts_with("[zip:"))));
+    }
+
+    #[test]
+    fn sanitize_tronque_et_remplace() {
+        assert_eq!(sanitize("a/b c.ps1"), "a_b_c_ps1");
+        let long = "x".repeat(100) + ".exe";
+        let s = sanitize(&long);
+        assert_eq!(s.len(), 40);
+        assert!(s.ends_with("_exe"));
+    }
+
+    #[test]
+    fn blocage_os_et_resultat_de_reputation() {
+        assert!(is_os_virus_block(&std::io::Error::from_raw_os_error(225)));
+        assert!(is_os_virus_block(&std::io::Error::from_raw_os_error(226)));
+        assert!(!is_os_virus_block(&std::io::Error::from_raw_os_error(2)));
+        let d = os_blocked_decision(&std::io::Error::from_raw_os_error(225));
+        assert_eq!(d.verdict, Verdict::Malicious);
+        let clean = reputation_result(Verdict::Clean, Severity::Clean, 0, "w".into(), "e".into());
+        assert!(clean.detections.is_empty());
+    }
+
+    #[test]
+    fn ioc_confiance_faible_reste_suspect() {
+        use ioc_engine::{IocKind, IocMatch};
+        let r = ioc_engine_result(&[IocMatch {
+            ioc: "1.2.3.4".into(),
+            kind: IocKind::Ip,
+            source: IocSource::Urlhaus,
+            threat: None,
+            confidence: 50,
+        }]);
+        assert_eq!(r.verdict, Verdict::Suspicious);
+        assert_eq!(r.detections[0].name, "IOC.URLhaus");
+    }
+
+    #[test]
+    fn fichier_absent_est_une_erreur_et_default_fonctionne() {
+        let d = Dispatcher::default();
+        assert!(d.scan_path(Path::new("/oc/absent.bin")).is_err());
+        let _ = d.clamd_available();
+    }
+
+    #[test]
+    fn dispatcher_sans_intel_a_des_stats_nulles() {
+        let d = Dispatcher::with_reputation(ReputationEngine::from_env());
+        assert_eq!(d.threat_intel_stats().total(), 0);
+        let d =
+            Dispatcher::with_threat_intel(ReputationEngine::from_env(), ThreatIntelBundle::empty());
+        assert_eq!(d.threat_intel_stats().total(), 0);
     }
 
     #[test]

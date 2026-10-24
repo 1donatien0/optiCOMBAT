@@ -2,6 +2,7 @@ using optiCombat.Platform;
 
 namespace optiCombat.Tests;
 
+[Collection(nameof(ProtectionPipeClientTests))]
 public sealed class ProtectionPipeShutdownTokenTests : IDisposable
 {
     private readonly string _dir;

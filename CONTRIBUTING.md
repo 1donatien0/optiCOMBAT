@@ -7,7 +7,7 @@ Dépôt officiel maintenu par **[1donatien0](https://github.com/1donatien0)**.
 - Windows 10/11 x64
 - [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
 - [Inno Setup 6](https://jrsoftware.org/isinfo.php) (installateur)
-- [Rust stable](https://rustup.rs) (moteur `opticombat.dll`)
+- [Rust stable](https://rustup.rs) (moteur `opticombat_engine.dll`)
 - Python 3 + Pillow (`scripts/generate-brand-assets.py`)
 
 ## Clone et build
@@ -40,8 +40,8 @@ dotnet run --project optiCombat.WinUI\optiCombat.WinUI.csproj
 
 ## Pull requests
 
-1. `dotnet test` Release vert (**618 / 618**) ; la CI exige une couverture lignes **≥ 62 %** (cible 65 %, mesure locale 66,4 %) et `dotnet format whitespace . --folder --verify-no-changes` propre. Les tests qui touchent préférences, quarantaine ou services utilisent `TestSupport/IsolatedServices` (dossier temporaire, moteurs et réseau factices) : aucun test ne doit écrire dans le `%APPDATA%` réel ni modifier le système (registre, tâches planifiées, nettoyage, winget).
-2. `cargo test --workspace --manifest-path engine/Cargo.toml` (**62** cas) si le moteur Rust est touché ; la CI exige `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` et une couverture lignes **≥ 65 %** (`cargo llvm-cov`, cible 75 %) ; `.\scripts\qualify-detection.ps1` si la détection change
+1. `dotnet test` Release vert (**943** tests) ; la CI exige une couverture lignes **≥ 85 %** (cible 90 % ; dernière mesure 87,1 % sous Linux, **89,8 %** sous Windows) et `dotnet format whitespace . --folder --verify-no-changes` propre. Les tests qui touchent préférences, quarantaine ou services utilisent `TestSupport/IsolatedServices` (dossier temporaire, moteurs et réseau factices) : aucun test ne doit écrire dans le `%APPDATA%` réel ni modifier le système (registre, tâches planifiées, nettoyage, winget). Les outils externes se simulent avec `TestSupport/FakeTools` (projet `optiCombat.TestFakes` : scénario `<exe>.fake`, code de sortie, sorties, arguments journalisés) ; tout processus ou écriture de registre passe par `SystemShell.Current`, à remplacer dans le test par `using var shell = RecordingShell.Install();` (porté par le flux d'exécution du test, sans gêner les tests parallèles). Par défaut, `TestSupport/TestDataRoot` redirige toute l'exécution vers un `%APPDATA%`/`%LOCALAPPDATA%` temporaire et pose un shell inerte ; un test qui pose sa propre racine (`OpticombatDataRoots.TestRootOverride`, collection `OpticombatPrefs`) revient ensuite à `TestDataRoot.Session`, jamais à `null`.
+2. `cargo test --workspace --manifest-path engine/Cargo.toml` (**170** cas) si le moteur Rust est touché ; la CI exige `cargo fmt --check`, `cargo clippy --all-targets -- -D warnings` et une couverture lignes **≥ 90 %** (`cargo llvm-cov`, cible 95 %) ; `.\scripts\qualify-detection.ps1` si la détection change
 3. CodeQL, Gitleaks et Dependency Review verts (aucun secret, aucune dépendance vulnérable *high*)
 4. Parité des clés FR/EN ; aucun texte en dur dans les vues XAML (`loc:Loc.Text` / `Content` / `Header` / `Placeholder` / `Tip`)
 5. Brosses de thème en `{ThemeResource}`, mêmes clés dans les trois thèmes : `pwsh -File scripts/check-winui-theme-keys.ps1`

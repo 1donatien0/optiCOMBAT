@@ -27,6 +27,8 @@ namespace optiCombat.Strings
         {
             public const string OpticombatWebsite = "https://sourceforge.net/projects/opticombat/";
             public const string OpticombatSourceForge = "https://sourceforge.net/projects/opticombat/";
+            public const string OpticombatReleasesApiLatest = "https://api.github.com/repos/1donatien0/optiCOMBAT/releases/latest";
+            public const string OpticombatReleasesPage = "https://github.com/1donatien0/optiCOMBAT/releases";
             public const string YaraForgeApiLatest = "https://api.github.com/repos/YARAHQ/yara-forge/releases/latest";
             public const string ClamAvRootCertRaw = "https://raw.githubusercontent.com/Cisco-Talos/clamav/main/certs/clamav.crt";
         }

@@ -32,9 +32,26 @@ public static class PlatformProtectionStatusService
 {
     private const string AmsiProviderGuid = "{A8F4E2B1-9C3D-4E5F-8A7B-1C2D3E4F5A6B}";
 
-    public static PlatformProtectionStatusReport Evaluate(IUserPreferencesAccessor? preferences = null)
+    /// <summary>Sondes système (registre AMSI, fltmc, service Defender, IPC) — remplaçables en test.</summary>
+    internal sealed class Probes
     {
-        if (!PlatformProtectionFeatureGate.IsUserActivatable)
+        public Func<bool> IsUserActivatable { get; init; } = () => PlatformProtectionFeatureGate.IsUserActivatable;
+        public Func<bool> IsIpcActive { get; init; } = PlatformProtectionBootstrap.IsRemoteProtectionActive;
+        public Func<string, bool> FileExists { get; init; } = File.Exists;
+        public Func<string, bool> IsAmsiRegistered { get; init; } = IsAmsiProviderRegistered;
+        public Func<bool> IsDefenderRunning { get; init; } = IsDefenderServiceRunning;
+        public Func<bool> IsMinifilterLoaded { get; init; } = PlatformProtectionStatusService.IsMinifilterLoaded;
+
+        public static Probes System { get; } = new();
+    }
+
+    public static PlatformProtectionStatusReport Evaluate(IUserPreferencesAccessor? preferences = null) =>
+        Evaluate((preferences ?? new DefaultUserPreferencesAccessor()).Current, Probes.System);
+
+    /// <summary>Logique de décision pure : quels composants sont actifs, absents ou à surveiller.</summary>
+    internal static PlatformProtectionStatusReport Evaluate(UserPreferences prefs, Probes probes)
+    {
+        if (!probes.IsUserActivatable())
         {
             return new PlatformProtectionStatusReport
             {
@@ -51,11 +68,9 @@ public static class PlatformProtectionStatusService
         }
 
         var items = new List<PlatformComponentStatus>();
-        var prefs = (preferences ?? new DefaultUserPreferencesAccessor()).Current;
-
         if (prefs.UsePlatformProtectionService)
         {
-            var ipc = PlatformProtectionBootstrap.IsRemoteProtectionActive();
+            var ipc = probes.IsIpcActive();
             items.Add(new PlatformComponentStatus
             {
                 LabelKey = ipc ? "Platform_IpcActive" : "Platform_IpcInactive",
@@ -72,8 +87,8 @@ public static class PlatformProtectionStatusService
         }
 
         var dllPath = Path.Combine(AppContext.BaseDirectory, "optiCombat.AmsiProvider.dll");
-        var dllPresent = File.Exists(dllPath);
-        var amsiRegistered = IsAmsiProviderRegistered(dllPath);
+        var dllPresent = probes.FileExists(dllPath);
+        var amsiRegistered = probes.IsAmsiRegistered(dllPath);
 
         if (!dllPresent)
         {
@@ -100,7 +115,7 @@ public static class PlatformProtectionStatusService
             });
         }
 
-        if (IsDefenderServiceRunning() && amsiRegistered)
+        if (amsiRegistered && probes.IsDefenderRunning())
         {
             items.Add(new PlatformComponentStatus
             {
@@ -109,8 +124,8 @@ public static class PlatformProtectionStatusService
             });
         }
 
-        var sysPresent = File.Exists(Path.Combine(AppContext.BaseDirectory, "optiCombat.Minifilter.sys"));
-        var fltLoaded = IsMinifilterLoaded();
+        var sysPresent = probes.FileExists(Path.Combine(AppContext.BaseDirectory, "optiCombat.Minifilter.sys"));
+        var fltLoaded = probes.IsMinifilterLoaded();
 
         if (fltLoaded)
         {

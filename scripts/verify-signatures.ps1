@@ -9,7 +9,7 @@ $ErrorActionPreference = "Stop"
 $files = @(
     "optiCombat.exe",
     "optiCombat.Service.exe",
-    "opticombat.dll",
+    "opticombat_engine.dll",
     "optiCombat.AmsiProvider.dll"
 )
 

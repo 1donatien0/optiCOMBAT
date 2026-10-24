@@ -207,6 +207,16 @@ impl ReputationEngine {
         Self::new(sources)
     }
 
+    /// Ajoute une source (ex. [`MalwareBazaarDb`] chargée depuis un export local).
+    pub fn push_source(&mut self, source: Box<dyn ReputationSource>) {
+        self.sources.push(source);
+    }
+
+    /// Nombre de sources interrogées.
+    pub fn source_count(&self) -> usize {
+        self.sources.len()
+    }
+
     /// Calcule le SHA-256 hex d'un buffer.
     pub fn sha256_hex(data: &[u8]) -> String {
         let digest = Sha256::digest(data);
@@ -314,7 +324,7 @@ mod tests {
 /// Le fichier est téléchargé par la couche C# et stocké dans
 /// `%LocalAppData%\optiCombat\threat_intel\malwarebazaar.csv`.
 pub struct MalwareBazaarDb {
-    /// SHA-256 (minuscules) → famille de malware.
+    /// SHA-256 (minuscules) → famille de malware (au plus [`MAX_BAZAAR_HASHES`]).
     hashes: std::collections::HashMap<String, String>,
 }
 
@@ -339,6 +349,9 @@ impl MalwareBazaarDb {
             if line.starts_with("first_seen") || line.starts_with("\"first_seen") {
                 continue;
             }
+            if self.hashes.len() >= MAX_BAZAAR_HASHES {
+                break;
+            }
             if let Some((sha256, name)) = parse_bazaar_line(line) {
                 self.hashes.insert(sha256, name);
                 count += 1;
@@ -352,6 +365,9 @@ impl MalwareBazaarDb {
     pub fn load_hash_list(&mut self, text: &str, default_name: &str) -> usize {
         let mut count = 0usize;
         for line in text.lines() {
+            if self.hashes.len() >= MAX_BAZAAR_HASHES {
+                break;
+            }
             let hash = line.trim().to_ascii_lowercase();
             if hash.len() == 64 && hash.chars().all(|c| c.is_ascii_hexdigit()) {
                 self.hashes
@@ -384,9 +400,14 @@ impl ReputationSource for MalwareBazaarDb {
     }
 }
 
+/// Plafond d'entrées : un export corrompu ou démesuré ne doit pas épuiser la mémoire
+/// du processus qui héberge le moteur.
+pub const MAX_BAZAAR_HASHES: usize = 2_000_000;
+
 /// Analyse une ligne CSV MalwareBazaar.
 ///
-/// Format : `first_seen,sha256,md5,sha1,reporter,file_name,mime,type,country,signature,tags,...`
+/// Format : `first_seen,sha256,md5,sha1,reporter,file_name,mime,type,signature,clamav,tags,...`
+/// L'export réel sépare les champs par `", "` : les espaces hors guillemets sont rognés.
 fn parse_bazaar_line(line: &str) -> Option<(String, String)> {
     // Divise en colonnes (guillemets optionnels).
     let fields = split_csv_line(line);

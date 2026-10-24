@@ -92,11 +92,15 @@ namespace optiCombat.Services
         /// code appelant pour permettre un éventuel "lance + attends + récupère
         /// résultat" si jamais on en a besoin plus tard.
         /// </summary>
+        /// <summary>Tests uniquement : exécutable relancé (au lieu du processus courant).</summary>
+        internal static string? ExecutablePathOverride { get; set; }
+
         public static bool RelaunchElevated(params string[] args)
         {
             try
             {
-                var exe = Environment.ProcessPath
+                var exe = ExecutablePathOverride
+                    ?? Environment.ProcessPath
                     ?? Assembly.GetEntryAssembly()?.Location
                     ?? throw new InvalidOperationException("Chemin exécutable indéterminable");
 
@@ -108,15 +112,14 @@ namespace optiCombat.Services
                 };
                 foreach (var a in args) psi.ArgumentList.Add(a);
 
-                var p = Process.Start(psi);
-                AppLogger.Info("ElevationHelper", $"Relaunch élevé : pid={p?.Id}");
-                return p != null;
-            }
-            catch (System.ComponentModel.Win32Exception wex)
-                when (wex.NativeErrorCode == 1223) // ERROR_CANCELLED
-            {
-                AppLogger.Info("ElevationHelper", "Élévation refusée par l'utilisateur");
-                return false;
+                var outcome = SystemShell.Current.Run(psi, timeoutMs: null);
+                if (outcome.Cancelled)
+                {
+                    AppLogger.Info("ElevationHelper", "Élévation refusée par l'utilisateur");
+                    return false;
+                }
+                AppLogger.Info("ElevationHelper", $"Relaunch élevé : lancé={outcome.Started}");
+                return outcome.Started;
             }
             catch (Exception ex)
             {

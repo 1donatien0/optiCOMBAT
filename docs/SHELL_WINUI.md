@@ -12,7 +12,7 @@ Le shell livré est `optiCombat.WinUI` (binaire `optiCombat.exe`). La couche mé
 | **`AntivirusPage`** | `SelectorBar` Analyse / Signatures / Quarantaine ; menu contextuel `--scan` |
 | **`HistoryPage`** | Timeline, 5 filtres, recherche, actions sur les menaces, exports HTML / PDF |
 | **`CleanPage`** | `SelectorBar` Nettoyage / Mises à jour / Tweaks ; `SystemCleanService` (temporaires, 7 navigateurs, corbeille, journaux Windows) + journal |
-| **`OptionsPage`** | Langue, thème (sombre, suivi de Windows, contraste renforcé, presets Combat / Minuit / Océan / Braise, accent `#RRGGBB`), protection (dont mode complément de Defender), USB, clamd, planification, exclusions, seuils, VirusTotal, exclusions Defender (opt-in), MAJ app |
+| **`OptionsPage`** | Langue, thème (sombre, suivi de Windows, contraste renforcé, presets Combat / Minuit / Océan / Braise, accent `#RRGGBB`), protection (dont mode complément de Defender), USB, clamd, cœur Rust, planification, exclusions, seuils, clé VirusTotal, Auth-Key abuse.ch (threat intel hors-ligne), exclusions Defender (opt-in), vérification de version GitHub (lien vers la release, pas d’installation) |
 | **Shell** | Systray (fermer = masquer), instance unique + messages fenêtre, toasts, Mica, `Ctrl+1`–`Ctrl+5` via `PreviewKeyDown`, min 720×480, préférences appliquées au démarrage (`WinUiStartupCoordinator`) |
 | **Installateur** | Cible le publish WinUI self-contained (`optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64\`). Une nouvelle version remplace l’installation existante (même AppId), sans désinstallation. |
 

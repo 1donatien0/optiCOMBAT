@@ -78,6 +78,13 @@ namespace optiCombat.Services
     {
         private string? _wingetPath;
 
+        public WingetUpdateService()
+        {
+        }
+
+        /// <summary>Constructeur de test : chemin de winget imposé.</summary>
+        internal WingetUpdateService(string wingetPath) => _wingetPath = wingetPath;
+
         /// <summary>
         /// Localise winget.exe. Ordre : alias utilisateur (fonctionne sans
         /// élévation), PATH, puis dossier WindowsApps machine (lisible seulement

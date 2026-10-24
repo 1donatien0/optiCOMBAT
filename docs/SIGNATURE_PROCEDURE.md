@@ -3,7 +3,7 @@
 Guide pratique pour signer optiCOMBAT. Six artefacts sont concernés, dont un (le pilote noyau) qui passe obligatoirement par Microsoft.
 
 > **Quand utiliser ce document ?**
-> - **Phase 1 (maintenant, sans pilote)** : seule la **§3** te concerne, et de façon **optionnelle** — un certificat **OV** pour `optiCombat.exe`, `opticombat.dll` et l'installeur. Pas besoin d'EV, ni de Partner Center, ni de signer le pilote (la couche plateforme est dormante). Tu peux même diffuser non signé en bêta.
+> - **Phase 1 (maintenant, sans pilote)** : seule la **§3** te concerne, et de façon **optionnelle** — un certificat **OV** pour `optiCombat.exe`, `opticombat_engine.dll` et l'installeur. Pas besoin d'EV, ni de Partner Center, ni de signer le pilote (la couche plateforme est dormante). Tu peux même diffuser non signé en bêta.
 > - **Phase 2 (~3 ans, activation de la couche plateforme)** : tout le reste (EV en **§2.1**, pilote en **§4**) devient nécessaire.
 >
 > Vérifié en juin 2026. Les prix et portails évoluent — recouper avec les liens en bas.
@@ -15,7 +15,7 @@ Guide pratique pour signer optiCOMBAT. Six artefacts sont concernés, dont un (l
 | Artefact | Type | Chaîne de signature |
 |---|---|---|
 | `optiCombat.exe` | Exécutable WinUI 3 (shell principal) | Authenticode (ton certificat) |
-| `opticombat.dll` | Cœur moteur Rust (FFI) | Authenticode (ton certificat) |
+| `opticombat_engine.dll` | Cœur moteur Rust (FFI) | Authenticode (ton certificat) |
 | Installeur `optiCombat_Setup_*.exe` | Inno Setup | Authenticode (ton certificat) |
 | `optiCombat.Service.exe` | Service Windows (couche plateforme, inactive) | Authenticode (ton certificat) |
 | `optiCombat.AmsiProvider.dll` | DLL user-mode (AMSI, inactive) | Authenticode (ton certificat) |
@@ -52,7 +52,7 @@ $ts = "http://timestamp.digicert.com"   # ou celui de ton émetteur
 
 # Binaires du dossier publish
 $pub = "optiCombat.WinUI\bin\Release\net8.0-windows10.0.19041.0\publish\win-x64"
-signtool sign /fd SHA256 /tr $ts /td SHA256 /a "$pub\optiCombat.exe" "$pub\opticombat.dll" "$pub\optiCombat.Service.exe"
+signtool sign /fd SHA256 /tr $ts /td SHA256 /a "$pub\optiCombat.exe" "$pub\opticombat_engine.dll" "$pub\optiCombat.Service.exe"
 
 # DLL AMSI (si livrée)
 
@@ -129,7 +129,7 @@ Un horodatage valide doit apparaître ; sans lui, tout casse à l'expiration du 
 ## 7. Ordre récapitulatif d'une release signée
 
 1. `dotnet publish` (ou `scripts\prepare-release.ps1`).
-2. Signer `optiCombat.exe`, `opticombat.dll`, `optiCombat.Service.exe` et, si livrée, `optiCombat.AmsiProvider.dll`.
+2. Signer `optiCombat.exe`, `opticombat_engine.dll`, `optiCombat.Service.exe` et, si livrée, `optiCombat.AmsiProvider.dll`.
 3. Faire signer le pilote par Microsoft (Partner Center) → récupérer `.sys` + `.cat`.
 4. Placer pilote+catalogue signés à l'emplacement attendu par l'installeur.
 5. Compiler l'installeur Inno (signature auto si configurée).

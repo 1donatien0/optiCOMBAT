@@ -73,6 +73,12 @@ namespace optiCombat.Services
 
         public CloudThreatIntelService CloudThreatIntel { get; }
 
+        /// <summary>Vérification des nouvelles versions du programme (releases publiées).</summary>
+        public UpdateService AppUpdates { get; }
+
+        /// <summary>Téléchargement des feeds abuse.ch (MalwareBazaar, URLhaus, ThreatFox).</summary>
+        public ThreatIntelFeedUpdater ThreatIntelUpdater { get; }
+
         public ISecurityPostureService SecurityPosture { get; }
 
         /// <summary>Versions signatures ClamAV/YARA avec cache TTL (accueil, onglet Signatures).</summary>
@@ -201,7 +207,7 @@ namespace optiCombat.Services
         /// <summary>Active ou coupe les timers freshclam / règles YARA.</summary>
         public void ApplySignatureAutoUpdate(bool enabled)
         {
-            SignatureUpdatePolicy.ApplyAutoUpdateTimers(FreshclamUpdater, RulesUpdater, enabled, _userPreferences);
+            SignatureUpdatePolicy.ApplyAutoUpdateTimers(FreshclamUpdater, RulesUpdater, enabled, _userPreferences, ThreatIntelUpdater);
             _userPreferences.Current.SignatureAutoUpdateEnabled = enabled;
             _userPreferences.Current.Save();
             RequestProtectionStateRefresh();
@@ -394,6 +400,8 @@ namespace optiCombat.Services
             ScanEngine = _services.GetRequiredService<IScanEngine>();
             ThreatReputation = _services.GetRequiredService<ThreatReputationService>();
             CloudThreatIntel = _services.GetRequiredService<CloudThreatIntelService>();
+            ThreatIntelUpdater = _services.GetRequiredService<ThreatIntelFeedUpdater>();
+            AppUpdates = _services.GetRequiredService<UpdateService>();
             SecurityPosture = _services.GetRequiredService<ISecurityPostureService>();
             SignatureStatus = _services.GetRequiredService<SignatureStatusService>();
             RealTimeProtection = _services.GetRequiredService<RealTimeProtection>();
@@ -453,6 +461,8 @@ namespace optiCombat.Services
             catch (Exception ex) { AppLogger.Warn("ServiceContainer", "FreshclamUpdater.DisableAutoUpdate", ex); }
             try { RulesUpdater.DisableAutoUpdate(); }
             catch (Exception ex) { AppLogger.Warn("ServiceContainer", "RulesUpdater.DisableAutoUpdate", ex); }
+            try { ThreatIntelUpdater.DisableAutoUpdate(); }
+            catch (Exception ex) { AppLogger.Warn("ServiceContainer", "ThreatIntelUpdater.DisableAutoUpdate", ex); }
             try { ClamdHost.Shared.Stop(); }
             catch (Exception ex) { AppLogger.Warn("ServiceContainer", "ClamdHost.Stop", ex); }
             try { DistractionFreeMonitor.Stop(); }

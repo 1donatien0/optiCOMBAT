@@ -5,7 +5,7 @@ using optiCombat.Services.OptiCombat;
 namespace optiCombat.Tests;
 
 /// <summary>
-/// Preuve d'intégration bout en bout : EICAR détecté via opticombat.dll (cœur Rust),
+/// Preuve d'intégration bout en bout : EICAR détecté via opticombat_engine.dll (cœur Rust),
 /// pas via le repli ClamAV+YARA managé. Ignore si la DLL native n'est pas déployée.
 /// </summary>
 public sealed class OptiCombatEicarIntegrationTests : IDisposable
@@ -64,6 +64,44 @@ public sealed class OptiCombatEicarIntegrationTests : IDisposable
         Assert.NotEmpty(result.Threats);
         Assert.Equal(0, clam.ScanFileCalls);
         Assert.Equal(0, yara.ScanFileCalls);
+    }
+
+    [Fact]
+    public async Task Native_engine_loads_threat_intel_and_flags_a_malwarebazaar_hash()
+    {
+        var engine = new OptiCombatScanEngine();
+        if (!engine.IsAvailable)
+            return;
+
+        var dir = Path.Combine(Path.GetTempPath(), "opticombat_intel_" + Guid.NewGuid().ToString("N"));
+        Directory.CreateDirectory(dir);
+        try
+        {
+            var payload = Path.Combine(dir, "payload.bin");
+            File.WriteAllText(payload, "charge utile threat intel " + Guid.NewGuid());
+            var sha = Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(File.ReadAllBytes(payload)))
+                .ToLowerInvariant();
+            var intel = Path.Combine(dir, "intel");
+            Directory.CreateDirectory(intel);
+            File.WriteAllText(Path.Combine(intel, "malwarebazaar_sha256.txt"), sha + "\n");
+            engine.ThreatIntelDirectory = intel;
+
+            Assert.Equal(1, engine.ReloadThreatIntel());
+            var result = await engine.ScanFileAsync(payload);
+
+            var threat = Assert.Single(result.Threats);
+            Assert.Equal("MalwareBazaar:Malware", threat.VirusName);
+            Assert.Equal("MalwareBazaar", threat.DetectedBy);
+        }
+        finally
+        {
+            // Dispatcher partagé de la DLL : revenir à un dossier vide pour les autres tests.
+            var empty = Path.Combine(dir, "empty");
+            Directory.CreateDirectory(empty);
+            engine.ThreatIntelDirectory = empty;
+            engine.ReloadThreatIntel();
+            try { Directory.Delete(dir, recursive: true); } catch { /* best effort */ }
+        }
     }
 
     /// <summary>Backends factices locaux (orchestrateur ne doit pas les appeler si Rust actif).</summary>

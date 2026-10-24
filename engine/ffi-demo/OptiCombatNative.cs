@@ -1,7 +1,7 @@
 // OptiCombatNative.cs — pont P/Invoke pour optiCombat.Service vers le cœur Rust.
 //
 // EXEMPLE D'INTÉGRATION (Phase 3). À placer, le moment venu, dans
-// optiCombat.Service (ex. Interop/). opticombat.dll doit être déployée à côté de
+// optiCombat.Service (ex. Interop/). opticombat_engine.dll doit être déployée à côté de
 // l'exécutable. Le service appelle ce cœur.
 using System;
 using System.Runtime.InteropServices;
@@ -24,7 +24,7 @@ namespace OptiCombat.Service.Interop
     /// </summary>
     public static class OptiCombatNative
     {
-        private const string Dll = "opticombat"; // opticombat.dll / libopticombat.so
+        private const string Dll = "opticombat_engine"; // opticombat_engine.dll / libopticombat_engine.so
 
         [DllImport(Dll, EntryPoint = "opticombat_scan_path", CallingConvention = CallingConvention.Cdecl)]
         private static extern int ScanPathNative([MarshalAs(UnmanagedType.LPUTF8Str)] string path);
@@ -37,6 +37,15 @@ namespace OptiCombat.Service.Interop
 
         [DllImport(Dll, EntryPoint = "opticombat_version", CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr VersionNative();
+
+        [DllImport(Dll, EntryPoint = "opticombat_load_threat_intel", CallingConvention = CallingConvention.Cdecl)]
+        private static extern long LoadThreatIntelNative([MarshalAs(UnmanagedType.LPUTF8Str)] string dir);
+
+        /// <summary>
+        /// Charge les exports abuse.ch d'un dossier (malwarebazaar.csv, urlhaus.csv, threatfox.csv…).
+        /// Renvoie le nombre d'entrées chargées, ou -1 si le dossier est invalide.
+        /// </summary>
+        public static long LoadThreatIntel(string dir) => LoadThreatIntelNative(dir);
 
         /// <summary>Scanne un fichier et renvoie le verdict normalisé.</summary>
         public static OptiCombatVerdict ScanPath(string path)

@@ -109,7 +109,7 @@ public sealed class ExclusionSettingsIsolatedTests : IDisposable
 
     public void Dispose()
     {
-        OpticombatDataRoots.TestRootOverride = null;
+        OpticombatDataRoots.TestRootOverride = TestDataRoot.Session;
         try { Directory.Delete(_root, recursive: true); }
         catch { /* best effort */ }
     }

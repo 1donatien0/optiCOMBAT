@@ -26,9 +26,9 @@
 - **Chemins d’analyse externes** (`--scan`, ligne de commande, pipe IPC) : validés par `ScanPathValidation` (pas de chemin de périphérique `\\.\` / `\\?\`, pas de caractère de contrôle, chemin existant ; dossiers système refusés côté IPC).
 - **Actions destructives** : toute suppression définitive demande une confirmation (« Non » par défaut) ; les corrections système du score de sécurité passent par confirmation puis une seule invite UAC, avec des commandes construites par l’application (aucun métacaractère `cmd.exe` accepté).
 - **Chemins sensibles** : restauration et scan IPC refusent System32, Windows, ProgramFiles, ProgramData, Startup.
-- **Secrets** : préférences (clé VirusTotal) chiffrées DPAPI + HMAC ; aucun secret dans le dépôt (Gitleaks en CI).
-- **Réseau** : seule la réputation VirusTotal (opt-in, clé API de l’utilisateur) envoie une donnée — le hash SHA-256 ; clamd écoute uniquement sur `127.0.0.1:3310`.
-- **CI** : `dotnet test` Release (**618 / 618**, couverture plancher 62 %, cible 65 %), `cargo test` (**62** cas), `cargo audit` ; CodeQL (C#, Rust, Actions), Gitleaks, Dependency Review, Dependabot (NuGet, Cargo, Actions) ; publish + SBOM CycloneDX sur `main`.
+- **Secrets** : préférences (clé VirusTotal, Auth-Key abuse.ch) chiffrées DPAPI + HMAC ; la clé abuse.ch est masquée dans les journaux ; aucun secret dans le dépôt (Gitleaks en CI).
+- **Réseau** : VirusTotal (opt-in) n’envoie que le hash SHA-256. Avec une Auth-Key abuse.ch, le shell télécharge des exports publics (MalwareBazaar, URLhaus, ThreatFox) ; la clé voyage dans l’URL, aucun fichier de l’utilisateur n’est envoyé. La vérification de version interroge l’API GitHub des releases et ouvre la page de téléchargement, sans installer. clamd n’écoute que sur `127.0.0.1:3310`.
+- **CI** : `dotnet test` Release (**943** tests, couverture lignes mesurée **89,8 %** sur Windows, plancher 85 %, cible 90 %), `cargo test` (**170** cas, couverture mesurée 92,6 %, plancher 90 %), `cargo audit` ; CodeQL (C#, Rust, Actions), Gitleaks, Dependency Review, Dependabot (NuGet, Cargo, Actions) ; publish + SBOM CycloneDX sur `main`. La bibliothèque native livrée s’appelle `opticombat_engine.dll`.
 
 ## Threat model
 

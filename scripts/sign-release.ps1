@@ -17,7 +17,7 @@ Set OPTICOMBAT_SIGN_THUMBPRINT to your EV certificate thumbprint, then re-run.
 Components to sign for distribution:
   - optiCombat.exe
   - optiCombat.Service.exe
-  - opticombat.dll
+  - opticombat_engine.dll
   - optiCombat.AmsiProvider.dll
   - optiCombat.Minifilter.sys (requires Microsoft attestation)
 
@@ -32,7 +32,7 @@ if (-not $signtool) { throw "signtool.exe not found. Install Windows SDK." }
 $files = @(
     "optiCombat.exe",
     "optiCombat.Service.exe",
-    "opticombat.dll",
+    "opticombat_engine.dll",
     "optiCombat.AmsiProvider.dll"
 )
 

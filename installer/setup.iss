@@ -104,24 +104,55 @@ VersionInfoCopyright=Copyright 2026 Dona By
 ;SignTool=signtool $f
 ;SignedUninstaller=yes
 
-; Langue de l'installateur = langue de l'application (UiCulture en Registre).
-ShowLanguageDialog=auto
+; Langue : la boîte « Français / English » s'affiche toujours, présélectionnée sur la langue
+; de Windows (français si Windows est en français, anglais sinon ; lors d'une mise à jour, la
+; langue de l'installation précédente). La langue choisie devient celle de l'application,
+; y compris lors d'une réinstallation (voir WriteInstallerUiCulture).
+; « auto » ne montrait la boîte que si aucune langue ne correspondait à Windows : sur un
+; Windows français, impossible d'installer en anglais.
+ShowLanguageDialog=yes
+LanguageDetectionMethod=uilanguage
 
 [Languages]
-Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+; Anglais en premier : langue par défaut si Windows n'est ni en français ni en anglais.
 Name: "english"; MessagesFile: "compiler:Default.isl"
+Name: "french"; MessagesFile: "compiler:Languages\French.isl"
+
+[CustomMessages]
+french.TaskDesktopIcon=Créer une icône sur le Bureau
+english.TaskDesktopIcon=Create a desktop shortcut
+french.GroupIcons=Icônes supplémentaires
+english.GroupIcons=Additional shortcuts
+french.TaskStartup=Lancer optiCombat au démarrage de Windows
+english.TaskStartup=Start optiCombat with Windows
+french.GroupAdvanced=Options avancées
+english.GroupAdvanced=Advanced options
+french.TaskAutoUpdateSig=Activer les mises à jour auto des signatures (recommandé)
+english.TaskAutoUpdateSig=Enable automatic signature updates (recommended)
+french.GroupClamAV=Antivirus ClamAV
+english.GroupClamAV=ClamAV antivirus
+french.TaskPlatformService=Protection système avancée — prévue dans 3 à 5 ans (pilote signé requis, indisponible aujourd'hui)
+english.TaskPlatformService=Advanced system protection — planned in 3 to 5 years (signed driver required, not available today)
+french.GroupPlatform=Protection avancée (à venir)
+english.GroupPlatform=Advanced protection (coming)
+french.UninstallShortcut=Désinstaller %1
+english.UninstallShortcut=Uninstall %1
+french.LaunchNow=Lancer %1 maintenant
+english.LaunchNow=Launch %1 now
+french.CleanupObsoleteTask=Nettoyage d'une tâche planifiée obsolète...
+english.CleanupObsoleteTask=Removing an obsolete scheduled task...
 
 [Messages]
 french.WelcomeLabel2=Ceci installe ou met à jour [name/ver] sur cet ordinateur.%n%nSi optiCombat est déjà installé, cette version le remplace dans le même dossier. L'historique, la quarantaine et les préférences sont conservés : il n'est pas nécessaire de désinstaller.%n%nIl est recommandé de fermer les autres applications avant de continuer.
 english.WelcomeLabel2=This will install or update [name/ver] on your computer.%n%nIf optiCombat is already installed, this version replaces it in the same folder. Scan history, quarantine and preferences are kept: you do not need to uninstall first.%n%nIt is recommended that you close all other applications before continuing.
 
 [Tasks]
-Name: "desktopicon";   Description: "Créer une icône sur le Bureau";                              GroupDescription: "Icônes supplémentaires"
-Name: "startupicon";   Description: "Lancer optiCombat au démarrage de Windows";                   GroupDescription: "Options avancées"; Flags: unchecked
-Name: "autoUpdateSig"; Description: "Activer les mises à jour auto des signatures (recommandé)"; GroupDescription: "Antivirus ClamAV"; Flags: checkedonce
+Name: "desktopicon";   Description: "{cm:TaskDesktopIcon}";   GroupDescription: "{cm:GroupIcons}"
+Name: "startupicon";   Description: "{cm:TaskStartup}";       GroupDescription: "{cm:GroupAdvanced}"; Flags: unchecked
+Name: "autoUpdateSig"; Description: "{cm:TaskAutoUpdateSig}"; GroupDescription: "{cm:GroupClamAV}"; Flags: checkedonce
 ; Mode plateforme (service Windows + minifiltre noyau) : prévu dans 3 à 5 ans (pilote signé EV).
 ; Case visible mais désactivée dans l'assistant — la RTP user-mode fonctionne sans lui.
-Name: "platformservice"; Description: "Protection système avancée — prévue dans 3 à 5 ans (pilote signé requis, indisponible aujourd'hui)"; GroupDescription: "Protection avancée (à venir)"; Flags: unchecked
+Name: "platformservice"; Description: "{cm:TaskPlatformService}"; GroupDescription: "{cm:GroupPlatform}"; Flags: unchecked
 
 [Files]
 ; ── Application principale ───────────────────────────────────────────────────
@@ -153,14 +184,14 @@ Source: "{#AppPublishSource}\optiCombat.Service.exe"; DestDir: "{app}"; Flags: i
 Source: "..\native\optiCombat.AmsiProvider\x64\Release\optiCombat.AmsiProvider.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\native\optiCombat.Minifilter\x64\optiCombat.Minifilter.sys"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; ── Coeur moteur Rust optiCombat (cdylib FFI) — voir scripts\build-engine.ps1 ──
-Source: "..\engine\target\release\opticombat.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
+Source: "..\engine\target\release\opticombat_engine.dll"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 ; Script exclusions Defender : copié pour usage manuel (admin) — jamais exécuté par l'installateur
 Source: "..\LICENSE.txt"; DestDir: "{app}"; Flags: ignoreversion skipifsourcedoesntexist
 Source: "..\scripts\add-defender-exclusions.ps1"; DestDir: "{app}\scripts"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
-Name: "{group}\Désinstaller {#AppName}"; Filename: "{uninstallexe}"
+Name: "{group}\{cm:UninstallShortcut,{#AppName}}"; Filename: "{uninstallexe}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 Name: "{userstartup}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startupicon
 
@@ -168,14 +199,16 @@ Name: "{userstartup}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: startu
 ; Menu contextuel Explorateur : enregistré en [Code] selon la langue de l'installateur (HKCU\Software\Classes).
 Root: HKCU; Subkey: "Software\optiCombat"; ValueName: "AutoUpdateSignatures"; ValueType: dword; ValueData: "1"; Tasks: autoUpdateSig
 Root: HKCU; Subkey: "Software\optiCombat"; ValueName: "Version"; ValueType: string; ValueData: "{#AppVersion}"; Flags: uninsdeletekey
-; UiCulture est réécrit à chaque install / mise à jour (fr-FR ou en-US selon la langue Inno).
+; UiCulture est réécrit à chaque install / mise à jour (fr-FR ou en-US selon la langue Inno),
+; avec UiCulturePending=1 : au lancement suivant, l'application adopte cette langue même si
+; une autre était enregistrée dans ses préférences, puis efface le marqueur.
 
 [Run]
 ; Retrait du tweak « historique Defender » (audit 360) : supprime la tâche SYSTEM et son script
 ; laissés par la v1.0.0 si le redémarrage n'a pas encore eu lieu (script dans un dossier ProgramData
 ; modifiable par un utilisateur standard = élévation de privilèges).
-Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""optiCombat-ClearDefenderHistory"""; Flags: runhidden waituntilterminated; StatusMsg: "Nettoyage d'une tâche planifiée obsolète..."
-Filename: "{app}\{#AppExeName}"; Description: "Lancer {#AppName} maintenant"; Flags: nowait postinstall skipifsilent runascurrentuser
+Filename: "{sys}\schtasks.exe"; Parameters: "/Delete /F /TN ""optiCombat-ClearDefenderHistory"""; Flags: runhidden waituntilterminated; StatusMsg: "{cm:CleanupObsoleteTask}"
+Filename: "{app}\{#AppExeName}"; Description: "{cm:LaunchNow,{#AppName}}"; Flags: nowait postinstall skipifsilent runascurrentuser
 
 ; =============================================================================
 ; CLEAN INSTALL — exécuté AVANT la copie des nouveaux fichiers
@@ -405,6 +438,9 @@ begin
     RegWriteStringValue(HKCU, 'Software\optiCombat', 'UiCulture', 'en-US')
   else
     RegWriteStringValue(HKCU, 'Software\optiCombat', 'UiCulture', 'fr-FR');
+  { Marqueur consommé par l'application au prochain démarrage : la langue choisie ici
+    l'emporte sur celle des préférences (réinstallation dans une autre langue). }
+  RegWriteDWordValue(HKCU, 'Software\optiCombat', 'UiCulturePending', 1);
 end;
 
 procedure RegisterExplorerContextMenu();

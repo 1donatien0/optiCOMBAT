@@ -8,7 +8,7 @@ use std::ffi::{CStr, CString};
 use std::io::Write;
 use std::os::windows::fs::OpenOptionsExt;
 
-use opticombat::{
+use opticombat_engine::{
     opticombat_scan_json, opticombat_scan_path, opticombat_string_free, OC_CLEAN, OC_MALICIOUS,
 };
 

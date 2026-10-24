@@ -23,11 +23,8 @@ namespace optiCombat.Services
         private const string HighPerformancePlanGuid = "8c5e7fda-e8bf-4a96-9a85-a6e23a8c635c";
 
         // ── Helpers registre (HKCU uniquement — pas d'élévation requise) ─────
-        private static void SetHkcuValue(string subKey, string name, int value)
-        {
-            using var key = Registry.CurrentUser.CreateSubKey(subKey, writable: true);
-            key.SetValue(name, value, RegistryValueKind.DWord);
-        }
+        private static void SetHkcuValue(string subKey, string name, int value) =>
+            SystemShell.Current.SetCurrentUserValue(subKey, name, value, RegistryValueKind.DWord);
 
         // ── Performance ──────────────────────────────────────────────────────
 
@@ -44,9 +41,7 @@ namespace optiCombat.Services
                 };
                 psi.ArgumentList.Add("/setactive");
                 psi.ArgumentList.Add(HighPerformancePlanGuid);
-                using var p = Process.Start(psi);
-                p?.WaitForExit(15000);
-                return p is { ExitCode: 0 };
+                return SystemShell.Current.Run(psi, 15000).Succeeded;
             }
             catch (Exception ex)
             {
@@ -76,13 +71,12 @@ namespace optiCombat.Services
         {
             try
             {
-                Process.Start(new ProcessStartInfo
+                return SystemShell.Current.Run(new ProcessStartInfo
                 {
                     FileName = "taskmgr.exe",
                     Arguments = "/0 /startup",
                     UseShellExecute = true,
-                });
-                return true;
+                }, timeoutMs: null).Started;
             }
             catch (Exception ex)
             {
@@ -193,33 +187,33 @@ namespace optiCombat.Services
         /// Windows relance explorer.exe automatiquement ; on le relance
         /// nous-mêmes par sécurité si ce n'est pas le cas après 3 s.
         /// </summary>
-        public static void RestartExplorer()
+        public static void RestartExplorer() => RestartExplorer(TimeSpan.FromSeconds(3));
+
+        /// <summary>Variante testable : délai avant de vérifier qu'Explorer est revenu.</summary>
+        internal static Task RestartExplorer(TimeSpan relaunchCheckDelay)
         {
+            var shell = SystemShell.Current;
             try
             {
-                foreach (var p in Process.GetProcessesByName("explorer"))
+                shell.KillProcesses("explorer");
+                return Task.Run(async () =>
                 {
-                    try { p.Kill(); }
-                    catch (Exception ex) { AppLogger.Warn("SystemTweaksService", "Kill explorer", ex); }
-                    finally { p.Dispose(); }
-                }
-
-                _ = Task.Run(async () =>
-                {
-                    await Task.Delay(3000).ConfigureAwait(false);
-                    if (Process.GetProcessesByName("explorer").Length == 0)
+                    try
                     {
-                        Process.Start(new ProcessStartInfo
-                        {
-                            FileName = "explorer.exe",
-                            UseShellExecute = true,
-                        });
+                        await Task.Delay(relaunchCheckDelay).ConfigureAwait(false);
+                        if (shell.CountProcesses("explorer") == 0)
+                            shell.Run(new ProcessStartInfo { FileName = "explorer.exe", UseShellExecute = true }, timeoutMs: null);
+                    }
+                    catch (Exception ex)
+                    {
+                        AppLogger.Warn("SystemTweaksService", "Relance explorer", ex);
                     }
                 });
             }
             catch (Exception ex)
             {
                 AppLogger.Warn("SystemTweaksService", "RestartExplorer", ex);
+                return Task.CompletedTask;
             }
         }
 
@@ -228,12 +222,15 @@ namespace optiCombat.Services
         [DllImport("dnsapi.dll", EntryPoint = "DnsFlushResolverCache", SetLastError = false)]
         private static extern uint DnsFlushResolverCache();
 
+        /// <summary>Tests uniquement : remplace l'appel dnsapi.dll.</summary>
+        internal static Func<uint>? FlushDnsOverride { get; set; }
+
         /// <summary>Vide le cache DNS (sans élévation, via dnsapi.dll).</summary>
         public static bool FlushDnsCache()
         {
             try
             {
-                DnsFlushResolverCache();
+                _ = FlushDnsOverride is { } flush ? flush() : DnsFlushResolverCache();
                 return true;
             }
             catch (Exception ex)
@@ -313,18 +310,14 @@ namespace optiCombat.Services
                     WindowStyle = ProcessWindowStyle.Minimized,
                 };
 
-                using var p = Process.Start(psi);
-                if (p == null)
+                // Pas de délai : DISM peut durer de longues minutes ; l'attente suit le processus.
+                var outcome = SystemShell.Current.Run(psi, waitForExit ? Timeout.Infinite : null);
+                if (outcome.Cancelled)
+                {
+                    AppLogger.Info("SystemTweaksService", "Élévation refusée par l'utilisateur");
                     return false;
-                if (waitForExit)
-                    p.WaitForExit();
-                return true;
-            }
-            catch (System.ComponentModel.Win32Exception wex)
-                when (wex.NativeErrorCode == 1223) // ERROR_CANCELLED : UAC refusé
-            {
-                AppLogger.Info("SystemTweaksService", "Élévation refusée par l'utilisateur");
-                return false;
+                }
+                return outcome.Started;
             }
             catch (Exception ex)
             {
@@ -338,12 +331,11 @@ namespace optiCombat.Services
         {
             try
             {
-                Process.Start(new ProcessStartInfo
+                return SystemShell.Current.Run(new ProcessStartInfo
                 {
                     FileName = "ms-settings:windowsupdate",
                     UseShellExecute = true,
-                });
-                return true;
+                }, timeoutMs: null).Started;
             }
             catch (Exception ex)
             {

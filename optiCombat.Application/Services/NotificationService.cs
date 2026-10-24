@@ -60,14 +60,20 @@ namespace optiCombat.Services
             _activationTarget = null;
         }
 
-        private static void SurActivationToastStatic(ToastNotificationActivatedEventArgsCompat e)
+        private static void SurActivationToastStatic(ToastNotificationActivatedEventArgsCompat e) =>
+            HandleActivationArgument(e.Argument);
+
+        /// <summary>Décode l'argument d'un toast cliqué et le transmet à l'instance active.</summary>
+        internal static void HandleActivationArgument(string argument)
         {
             try
             {
-                var parsed = ToastArguments.Parse(e.Argument);
-                var action = parsed.Get("action") ?? string.Empty;
-                var file = parsed.Get("file");
-                var virus = parsed.Get("virus");
+                var parsed = ToastArguments.Parse(argument);
+                // TryGetValue : « Get » lève KeyNotFoundException si la clé manque — les boutons
+                // « Ouvrir » / « Historique » ne portent que « action ».
+                var action = parsed.TryGetValue("action", out string? a) ? a ?? string.Empty : string.Empty;
+                var file = parsed.TryGetValue("file", out string? f) ? f : null;
+                var virus = parsed.TryGetValue("virus", out string? v) ? v : null;
 
                 var args = new ToastActivationEventArgs(action, file, virus);
                 _activationTarget?.DispatchActivation(args);
@@ -89,7 +95,7 @@ namespace optiCombat.Services
             {
                 var severity = RiskScoringService.GetSeverityLevel(threat);
 
-                new ToastContentBuilder()
+                Present(new ToastContentBuilder()
                     .AddArgument("action", "threat")
                     .AddArgument("file", threat.FilePath)
                     .AddArgument("virus", threat.VirusName)
@@ -112,12 +118,23 @@ namespace optiCombat.Services
                         .SetContent(LocalizationService.GetString("Notif_OpenApp"))
                         .AddArgument("action", "open"))
                     .SetToastDuration(ToastDuration.Long)
-                    .Show();
+                    );
             }
             catch (Exception ex)
             {
                 AppLogger.Error("NotificationService", "ShowThreatDetected", ex);
             }
+        }
+
+        /// <summary>Tests uniquement : reçoit chaque toast construit au lieu de l'afficher (pas de COM).</summary>
+        internal Action<ToastContentBuilder>? PresentOverride { get; set; }
+
+        private void Present(ToastContentBuilder toast)
+        {
+            if (PresentOverride is { } capture)
+                capture(toast);
+            else
+                toast.Show();
         }
 
         internal bool ShouldShowToast() =>
@@ -129,14 +146,14 @@ namespace optiCombat.Services
 
             try
             {
-                new ToastContentBuilder()
+                Present(new ToastContentBuilder()
                     .AddArgument("action", "quarantined")
                     .AddText(LocalizationService.GetString("Notif_QuarantinedTitle"))
                     .AddText($"{threat.FileName} → {threat.VirusName}")
                     .AddButton(new ToastButton()
                         .SetContent(LocalizationService.GetString("Notif_ViewQuarantine"))
                         .AddArgument("action", "showquarantine"))
-                    .Show();
+                    );
             }
             catch (Exception ex)
             {
@@ -150,13 +167,13 @@ namespace optiCombat.Services
 
             try
             {
-                new ToastContentBuilder()
+                Present(new ToastContentBuilder()
                     .AddArgument("action", "usbscanstart")
                     .AddArgument("drive", driveLabel)
                     .AddText(LocalizationService.GetString("Notif_UsbScanStartedTitle"))
                     .AddText(LocalizationService.Format("Notif_UsbScanStartedBody", driveLabel))
                     .SetToastDuration(ToastDuration.Short)
-                    .Show();
+                    );
             }
             catch (Exception ex)
             {
@@ -172,7 +189,7 @@ namespace optiCombat.Services
             {
                 if (threatsFound == 0)
                 {
-                    new ToastContentBuilder()
+                    Present(new ToastContentBuilder()
                         .AddArgument("action", "usbscanok")
                         .AddArgument("drive", driveLabel)
                         .AddText(LocalizationService.Format("Notif_UsbScanOkTitle", driveLabel))
@@ -180,11 +197,11 @@ namespace optiCombat.Services
                         .AddButton(new ToastButton()
                             .SetContent(LocalizationService.GetString("Notif_OpenAntivirus"))
                             .AddArgument("action", "openav"))
-                        .Show();
+                        );
                 }
                 else
                 {
-                    new ToastContentBuilder()
+                    Present(new ToastContentBuilder()
                         .AddArgument("action", "usbscanthreats")
                         .AddArgument("drive", driveLabel)
                         .AddArgument("threats", threatsFound.ToString())
@@ -196,7 +213,7 @@ namespace optiCombat.Services
                         .AddButton(new ToastButton()
                             .SetContent(LocalizationService.GetString("Notif_HistoryBtn"))
                             .AddArgument("action", "history"))
-                        .Show();
+                        );
                 }
             }
             catch (Exception ex)
@@ -213,18 +230,18 @@ namespace optiCombat.Services
             {
                 if (threatsFound == 0)
                 {
-                    new ToastContentBuilder()
+                    Present(new ToastContentBuilder()
                         .AddArgument("action", "scanok")
                         .AddText(LocalizationService.GetString("Notif_ScanOkTitle"))
                         .AddText(LocalizationService.Format("Notif_ScanOkBody", filesScanned))
                         .AddButton(new ToastButton()
                             .SetContent(LocalizationService.GetString("Notif_OpenAntivirus"))
                             .AddArgument("action", "openav"))
-                        .Show();
+                        );
                 }
                 else
                 {
-                    new ToastContentBuilder()
+                    Present(new ToastContentBuilder()
                         .AddArgument("action", "scanthreats")
                         .AddArgument("threats", threatsFound.ToString())
                         .AddText(LocalizationService.Format("Notif_ScanThreatsTitle", threatsFound))
@@ -238,7 +255,7 @@ namespace optiCombat.Services
                         .AddButton(new ToastButton()
                             .SetContent(LocalizationService.GetString("Notif_OpenApp"))
                             .AddArgument("action", "open"))
-                        .Show();
+                        );
                 }
             }
             catch (Exception ex)
@@ -253,14 +270,14 @@ namespace optiCombat.Services
 
             try
             {
-                new ToastContentBuilder()
+                Present(new ToastContentBuilder()
                     .AddArgument("action", "update")
                     .AddText(LocalizationService.GetString("Notif_UpdateTitle"))
                     .AddText(LocalizationService.Format("Notif_UpdateBody", version))
                     .AddButton(new ToastButton()
                         .SetContent(LocalizationService.GetString("Notif_UpdateBtn"))
                         .AddArgument("action", "update"))
-                    .Show();
+                    );
             }
             catch (Exception ex)
             {
@@ -274,12 +291,12 @@ namespace optiCombat.Services
 
             try
             {
-                new ToastContentBuilder()
+                Present(new ToastContentBuilder()
                     .AddArgument("action", "rtpstarted")
                     .AddText(LocalizationService.GetString("Notif_RtpStartedTitle"))
                     .AddText(LocalizationService.GetString("Notif_RtpStartedBody"))
                     .SetToastDuration(ToastDuration.Short)
-                    .Show();
+                    );
             }
             catch (Exception ex)
             {

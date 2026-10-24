@@ -14,6 +14,8 @@ namespace optiCombat.Services
 
         private readonly string _clamdExe;
         private readonly string _databaseDir;
+        private readonly Func<CancellationToken, Task<bool>> _ping;
+        private readonly TimeSpan _startTimeout;
         private Process? _process;
         private bool _disposed;
 
@@ -31,10 +33,22 @@ namespace optiCombat.Services
         }
 
         private ClamdHost(string clamavBinDir, string databaseDir)
+            : this(clamavBinDir, databaseDir, DefaultPingAsync, TimeSpan.FromSeconds(20))
+        {
+        }
+
+        /// <summary>Constructeur de test : sonde PING et délai de démarrage injectés.</summary>
+        internal ClamdHost(
+            string clamavBinDir, string databaseDir, Func<CancellationToken, Task<bool>> ping, TimeSpan startTimeout)
         {
             _clamdExe = Path.Combine(clamavBinDir, "clamd.exe");
             _databaseDir = databaseDir;
+            _ping = ping;
+            _startTimeout = startTimeout;
         }
+
+        /// <summary>Processus clamd lancé par cet hôte et toujours actif.</summary>
+        internal bool IsProcessRunning => _process is { HasExited: false };
 
         public bool IsBinaryPresent => File.Exists(_clamdExe);
 
@@ -43,13 +57,13 @@ namespace optiCombat.Services
             if (!IsBinaryPresent)
                 return false;
 
-            if (await PingAsync(ct).ConfigureAwait(false))
+            if (await _ping(ct).ConfigureAwait(false))
                 return true;
 
             await StartGate.WaitAsync(ct).ConfigureAwait(false);
             try
             {
-                if (await PingAsync(ct).ConfigureAwait(false))
+                if (await _ping(ct).ConfigureAwait(false))
                     return true;
 
                 lock (Gate)
@@ -85,11 +99,11 @@ namespace optiCombat.Services
                 StartGate.Release();
             }
 
-            var deadline = DateTime.UtcNow.AddSeconds(20);
+            var deadline = DateTime.UtcNow + _startTimeout;
             while (DateTime.UtcNow < deadline && !ct.IsCancellationRequested)
             {
                 await Task.Delay(400, ct).ConfigureAwait(false);
-                if (await PingAsync(ct).ConfigureAwait(false))
+                if (await _ping(ct).ConfigureAwait(false))
                 {
                     AppLogger.Info("ClamdHost", "clamd opérationnel (TCP 3310)");
                     return true;
@@ -100,7 +114,7 @@ namespace optiCombat.Services
             return false;
         }
 
-        private static async Task<bool> PingAsync(CancellationToken ct)
+        private static async Task<bool> DefaultPingAsync(CancellationToken ct)
         {
             try
             {

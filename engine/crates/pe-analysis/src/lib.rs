@@ -119,7 +119,7 @@ const MIN_NORMAL_IAT_IMPORTS: usize = 8;
 /// API surveillées (sous-ensemble de la table heuristique) pour le scan de
 /// chaînes de secours quand l'IAT est masquée.
 /// Stockées masquées (voir `engine_core::masked!`) pour ne pas apparaître en
-/// clair dans `opticombat.dll`.
+/// clair dans `opticombat_engine.dll`.
 const WATCHED_APIS: &[&[u8]] = &[
     masked!(b"VirtualAlloc"),
     masked!(b"VirtualAllocEx"),
@@ -254,9 +254,277 @@ pub fn shannon_entropy(data: &[u8]) -> f64 {
     h
 }
 
+/// Générateur de PE minimaux valides, pour les tests des crates du moteur
+/// (aucun binaire réel n'est versionné dans le dépôt).
+pub mod fixtures {
+    /// Section à placer dans le PE généré.
+    pub struct FixtureSection<'a> {
+        pub name: &'a str,
+        pub characteristics: u32,
+        pub data: &'a [u8],
+    }
+
+    /// Caractéristiques usuelles.
+    pub const CODE: u32 = 0x6000_0020; // CNT_CODE | MEM_EXECUTE | MEM_READ
+    pub const DATA: u32 = 0xC000_0040; // INITIALIZED_DATA | MEM_READ | MEM_WRITE
+    pub const RWX: u32 = 0xE000_0020; // CODE | EXECUTE | READ | WRITE
+
+    const FILE_ALIGN: usize = 0x200;
+    const SECT_ALIGN: u32 = 0x1000;
+
+    fn align(v: usize, a: usize) -> usize {
+        v.div_ceil(a) * a
+    }
+
+    /// Construit un PE32 (x86) ou PE32+ (x64) sans imports, avec les sections données,
+    /// suivies de `overlay` (octets bruts après la dernière section).
+    pub fn build_pe(sections: &[FixtureSection<'_>], pe64: bool, overlay: &[u8]) -> Vec<u8> {
+        let opt_size: usize = if pe64 { 0xF0 } else { 0xE0 };
+        let e_lfanew = 0x80usize;
+        let headers_len = e_lfanew + 4 + 20 + opt_size + 40 * sections.len();
+        let size_of_headers = align(headers_len, FILE_ALIGN);
+
+        let mut raw_offsets = Vec::new();
+        let mut cursor = size_of_headers;
+        for s in sections {
+            raw_offsets.push(cursor);
+            cursor += align(s.data.len().max(1), FILE_ALIGN);
+        }
+        let image_size = SECT_ALIGN as usize * (1 + sections.len()) + SECT_ALIGN as usize;
+
+        let mut out = vec![0u8; cursor];
+        out[0] = b'M';
+        out[1] = b'Z';
+        out[0x3C..0x40].copy_from_slice(&(e_lfanew as u32).to_le_bytes());
+        let mut p = e_lfanew;
+        out[p..p + 4].copy_from_slice(b"PE\0\0");
+        p += 4;
+        // COFF
+        let machine: u16 = if pe64 { 0x8664 } else { 0x014c };
+        out[p..p + 2].copy_from_slice(&machine.to_le_bytes());
+        out[p + 2..p + 4].copy_from_slice(&(sections.len() as u16).to_le_bytes());
+        out[p + 16..p + 18].copy_from_slice(&(opt_size as u16).to_le_bytes());
+        out[p + 18..p + 20].copy_from_slice(&0x0102u16.to_le_bytes()); // EXECUTABLE | 32BIT
+        p += 20;
+        // Optional header
+        let o = p;
+        out[o..o + 2].copy_from_slice(&(if pe64 { 0x20bu16 } else { 0x10bu16 }).to_le_bytes());
+        out[o + 16..o + 20].copy_from_slice(&SECT_ALIGN.to_le_bytes()); // AddressOfEntryPoint
+        out[o + 20..o + 24].copy_from_slice(&SECT_ALIGN.to_le_bytes()); // BaseOfCode
+        let (img_base_off, rest) = if pe64 {
+            (24usize, 32usize)
+        } else {
+            (28usize, 32usize)
+        };
+        if pe64 {
+            out[o + img_base_off..o + img_base_off + 8]
+                .copy_from_slice(&0x1_4000_0000u64.to_le_bytes());
+        } else {
+            out[o + 24..o + 28].copy_from_slice(&(2 * SECT_ALIGN).to_le_bytes()); // BaseOfData
+            out[o + img_base_off..o + img_base_off + 4]
+                .copy_from_slice(&0x0040_0000u32.to_le_bytes());
+        }
+        out[o + rest..o + rest + 4].copy_from_slice(&SECT_ALIGN.to_le_bytes());
+        out[o + rest + 4..o + rest + 8].copy_from_slice(&(FILE_ALIGN as u32).to_le_bytes());
+        out[o + 40..o + 42].copy_from_slice(&6u16.to_le_bytes()); // MajorOSVersion
+        out[o + 48..o + 50].copy_from_slice(&6u16.to_le_bytes()); // MajorSubsystemVersion
+        out[o + 56..o + 60].copy_from_slice(&(image_size as u32).to_le_bytes());
+        out[o + 60..o + 64].copy_from_slice(&(size_of_headers as u32).to_le_bytes());
+        out[o + 68..o + 70].copy_from_slice(&3u16.to_le_bytes()); // CUI
+        let nrva_off = if pe64 { 108 } else { 92 };
+        out[o + nrva_off..o + nrva_off + 4].copy_from_slice(&16u32.to_le_bytes());
+        p += opt_size;
+        // Section headers
+        for (i, s) in sections.iter().enumerate() {
+            let h = p + 40 * i;
+            let name = s.name.as_bytes();
+            out[h..h + name.len().min(8)].copy_from_slice(&name[..name.len().min(8)]);
+            let va = SECT_ALIGN * (1 + i as u32);
+            out[h + 8..h + 12].copy_from_slice(&(s.data.len().max(1) as u32).to_le_bytes());
+            out[h + 12..h + 16].copy_from_slice(&va.to_le_bytes());
+            let raw = align(s.data.len().max(1), FILE_ALIGN) as u32;
+            out[h + 16..h + 20].copy_from_slice(&raw.to_le_bytes());
+            out[h + 20..h + 24].copy_from_slice(&(raw_offsets[i] as u32).to_le_bytes());
+            out[h + 36..h + 40].copy_from_slice(&s.characteristics.to_le_bytes());
+            out[raw_offsets[i]..raw_offsets[i] + s.data.len()].copy_from_slice(s.data);
+        }
+        out.extend_from_slice(overlay);
+        out
+    }
+}
+
 #[cfg(test)]
 mod tests {
+    use super::fixtures::{build_pe, FixtureSection, CODE, DATA, RWX};
     use super::*;
+
+    #[test]
+    fn pe32_valide_analyse_par_goblin() {
+        let code = [0x90u8; 64];
+        let data = b"donnees ordinaires";
+        let pe = build_pe(
+            &[
+                FixtureSection {
+                    name: ".text",
+                    characteristics: CODE,
+                    data: &code,
+                },
+                FixtureSection {
+                    name: ".data",
+                    characteristics: DATA,
+                    data,
+                },
+            ],
+            false,
+            b"",
+        );
+        assert!(
+            goblin::pe::PE::parse(&pe).is_ok(),
+            "fixture refusée par goblin"
+        );
+        let f = analyze_bytes(&pe).unwrap();
+        assert!(f.is_pe);
+        assert!(!f.is_64bit);
+        assert_eq!(f.sections.len(), 2);
+        assert_eq!(f.sections[0].name, ".text");
+        assert!(f.sections[0].is_executable());
+        assert!(!f.sections[0].is_writable());
+        assert!(f.sections[1].is_writable());
+        assert!(!f.has_executable_writable_section);
+        assert_eq!(f.nonstandard_section_count, 0);
+        assert!(!f.modified_upx);
+        assert!(f.max_section_entropy >= 0.0);
+    }
+
+    #[test]
+    fn pe64_section_rwx_et_noms_non_standard() {
+        let noisy: Vec<u8> = (0..4096u32)
+            .map(|i| (i.wrapping_mul(2654435761) >> 13) as u8)
+            .collect();
+        let pe = build_pe(
+            &[
+                FixtureSection {
+                    name: "UPX0",
+                    characteristics: RWX,
+                    data: &noisy,
+                },
+                FixtureSection {
+                    name: ".zz",
+                    characteristics: DATA,
+                    data: b"x",
+                },
+                FixtureSection {
+                    name: "/4",
+                    characteristics: DATA,
+                    data: b"y",
+                },
+            ],
+            true,
+            b"",
+        );
+        let f = analyze_bytes(&pe).unwrap();
+        assert!(f.is_64bit);
+        assert!(f.has_executable_writable_section);
+        assert_eq!(f.nonstandard_section_count, 2, "{:?}", f.sections);
+        assert!(f.modified_upx, "UPX sans marqueur = UPX modifié");
+        assert!(f.max_section_entropy > 7.0, "{}", f.max_section_entropy);
+    }
+
+    #[test]
+    fn upx_avec_marqueur_n_est_pas_modifie() {
+        let pe = build_pe(
+            &[FixtureSection {
+                name: "UPX1",
+                characteristics: CODE,
+                data: b"code",
+            }],
+            false,
+            b"$Info: This file is packed with the UPX executable packer",
+        );
+        assert!(!analyze_bytes(&pe).unwrap().modified_upx);
+    }
+
+    #[test]
+    fn iat_vide_completee_par_le_scan_de_chaines() {
+        let pe = build_pe(
+            &[FixtureSection {
+                name: ".rdata",
+                characteristics: DATA,
+                data: b"..VirtualAllocEx..WriteProcessMemory..CreateRemoteThread..",
+            }],
+            false,
+            b"",
+        );
+        let f = analyze_bytes(&pe).unwrap();
+        assert!(f.imports("VirtualAllocEx"));
+        assert!(
+            f.imports("writeprocessmemory"),
+            "comparaison insensible à la casse"
+        );
+        assert!(!f.runpe_combo(), "sans SetThreadContext/ResumeThread");
+    }
+
+    #[test]
+    fn analyze_lit_le_fichier_et_signale_l_erreur_d_io() {
+        let p = std::env::temp_dir().join(format!("oc_pe_{}.exe", std::process::id()));
+        std::fs::write(
+            &p,
+            build_pe(
+                &[FixtureSection {
+                    name: ".text",
+                    characteristics: CODE,
+                    data: b"c",
+                }],
+                false,
+                b"",
+            ),
+        )
+        .unwrap();
+        assert!(analyze(&p).unwrap().is_pe);
+        let _ = std::fs::remove_file(&p);
+        let err = analyze(Path::new("/oc/absent.exe")).unwrap_err();
+        assert!(!err.to_string().is_empty());
+    }
+
+    #[test]
+    fn section_hors_fichier_a_une_entropie_nulle() {
+        let mut pe = build_pe(
+            &[FixtureSection {
+                name: ".text",
+                characteristics: CODE,
+                data: b"c",
+            }],
+            false,
+            b"",
+        );
+        // PointerToRawData de la première section → au-delà de la fin du fichier.
+        let sh = 0x80 + 4 + 20 + 0xE0;
+        pe[sh + 20..sh + 24].copy_from_slice(&0x00FF_0000u32.to_le_bytes());
+        if let Ok(f) = analyze_bytes(&pe) {
+            if let Some(s) = f.sections.first() {
+                assert_eq!(s.entropy, 0.0);
+            }
+        }
+    }
+
+    #[test]
+    fn imports_masques_et_runpe() {
+        let f = PeFeatures {
+            import_names: vec![
+                "WriteProcessMemory".into(),
+                "ResumeThread".into(),
+                "VirtualAllocEx".into(),
+            ],
+            ..PeFeatures::empty()
+        };
+        assert!(f.runpe_combo());
+        assert!(f.imports_masked(masked!(b"VirtualAllocEx")));
+        assert!(!f.imports_masked(masked!(b"LoadLibraryA")));
+        assert!(is_standard_section(""));
+        assert!(is_standard_section(".TEXT"));
+        assert!(!window_contains(b"ab", b""));
+        assert!(!window_contains(b"ab", b"abc"));
+    }
 
     #[test]
     fn non_pe() {

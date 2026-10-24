@@ -33,6 +33,8 @@ internal sealed class IsolatedServices : IDisposable
         ExclusionsAccessor = new FixedExclusionsAccessor(Exclusions);
         Clam = clam ?? new ScriptedClamBackend();
         Http = http ?? new FakeHttpHandler();
+        // schtasks factice : aucune tâche planifiée réelle n'est créée par les tests.
+        Schtasks = FakeTools.Install(Path.Combine(Root, "tools"), "schtasks.exe");
 
         Container = new ServiceContainer(services =>
         {
@@ -47,6 +49,13 @@ internal sealed class IsolatedServices : IDisposable
             // Signatures : aucun freshclam.exe ni accès réseau réel.
             services.AddSingleton(_ => new FreshclamUpdater(Path.Combine(Root, "clamav")));
             services.AddSingleton(_ => new YaraForgeUpdater(Path.Combine(Root, "rules"), new HttpClient(Http)));
+            // Threat intel abuse.ch : même faux serveur HTTP, dossier isolé.
+            services.AddSingleton(_ => new ThreatIntelFeedUpdater(
+                PrefsAccessor, Path.Combine(Root, "local", "threat_intel"), new HttpClient(Http), () => DateTime.UtcNow));
+            services.AddSingleton(_ => new UpdateService(new HttpClient(Http), Path.Combine(Root, "updates")));
+            services.AddSingleton(_ => new ScheduledScanService(Schtasks, Path.Combine(Root, "optiCombat.exe")));
+            services.AddSingleton(_ => new ThreatReputationService(new HttpClient(Http), PrefsAccessor));
+            services.AddSingleton(_ => new TamperProtectionService(PrefsAccessor, ExclusionsAccessor) { SchtasksPath = Schtasks });
         });
     }
 
@@ -63,6 +72,9 @@ internal sealed class IsolatedServices : IDisposable
     public ScriptedClamBackend Clam { get; }
 
     public FakeHttpHandler Http { get; }
+
+    /// <summary>Chemin du schtasks factice (scénario et appels via <see cref="FakeTools"/>).</summary>
+    public string Schtasks { get; }
 
     public ServiceContainer Container { get; }
 
@@ -81,7 +93,7 @@ internal sealed class IsolatedServices : IDisposable
         try { Container.Shutdown(); }
         catch { /* best effort */ }
 
-        OpticombatDataRoots.TestRootOverride = null;
+        OpticombatDataRoots.TestRootOverride = TestDataRoot.Session;
         var production = new DefaultUserPreferencesAccessor();
         LocalizationService.ConfigurePreferencesAccessor(production);
         DistractionFreeMonitor.Initialize(production);
@@ -127,12 +139,22 @@ internal sealed class ScriptedClamBackend : IClamAvOrchestratorBackend
     /// <summary>Signatures à renvoyer par fichier (clé = chemin complet).</summary>
     public Dictionary<string, string> ThreatsByPath { get; } = new(StringComparer.OrdinalIgnoreCase);
 
+    /// <summary>Signatures par nom de fichier seul (fichiers temporaires au chemin imprévisible).</summary>
+    public Dictionary<string, string> ThreatsByFileName { get; } = new(StringComparer.OrdinalIgnoreCase);
+
     public Exception? ThrowOnScan { get; set; }
 
     /// <summary>Bloque le scan jusqu'à l'annulation du jeton.</summary>
     public bool WaitForCancellation { get; set; }
 
     public int Calls { get; private set; }
+
+    /// <summary>
+    /// Si faux, le scan de dossier ne liste pas les fichiers. Le quick scan réel
+    /// parcourt Bureau, Téléchargements et Windows\Temp : les énumérer bloque ou
+    /// lève UnauthorizedAccessException sur un poste de développement.
+    /// </summary>
+    public bool ListFiles { get; set; } = true;
 
     public bool IsClamAvInstalled() => true;
 
@@ -141,9 +163,18 @@ internal sealed class ScriptedClamBackend : IClamAvOrchestratorBackend
 
     public Task<ScanResult> ScanFolderAsync(string folderPath, IProgress<ScanProgress>? progress = null, CancellationToken ct = default)
     {
-        var files = Directory.Exists(folderPath)
-            ? Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories)
-            : Array.Empty<string>();
+        string[] files;
+        if (!ListFiles || !Directory.Exists(folderPath))
+            files = Array.Empty<string>();
+        else
+        {
+            try
+            {
+                files = Directory.GetFiles(folderPath, "*", SearchOption.AllDirectories);
+            }
+            catch (UnauthorizedAccessException) { files = Array.Empty<string>(); }
+            catch (IOException) { files = Array.Empty<string>(); }
+        }
         return RunAsync(files, folderPath, ScanType.Folder, progress, ct);
     }
 
@@ -171,7 +202,7 @@ internal sealed class ScriptedClamBackend : IClamAvOrchestratorBackend
         foreach (var f in files)
         {
             progress?.Report(new ScanProgress { CurrentFilePath = f, FilesScanned = 1 });
-            if (ThreatsByPath.TryGetValue(f, out var sig))
+            if (ThreatsByPath.TryGetValue(f, out var sig) || ThreatsByFileName.TryGetValue(Path.GetFileName(f), out sig))
                 result.Threats.Add(ThreatInfo.FromClamAv(f, sig, new FileInfo(f).Exists ? new FileInfo(f).Length : -1));
         }
         return result;

@@ -56,6 +56,33 @@ public sealed class LocalizationServiceTests : IDisposable
     }
 
     [Fact]
+    public void Empty_key_is_blank_and_a_bad_format_returns_the_template()
+    {
+        Assert.Equal(string.Empty, LocalizationService.GetString(""));
+        Assert.Equal("Erreur : {0}", LocalizationService.Format("ScanSummary_Error"));
+    }
+
+    [Fact]
+    public void CultureChanged_fires_only_when_the_culture_actually_changes()
+    {
+        var changes = 0;
+        LocalizationService.CultureChanged += OnChanged;
+        try
+        {
+            LocalizationService.ApplyCulture("fr-FR");
+            LocalizationService.ApplyCulture("en-US");
+            LocalizationService.ApplyCulture("en");
+        }
+        finally
+        {
+            LocalizationService.CultureChanged -= OnChanged;
+        }
+
+        Assert.Equal(1, changes);
+        void OnChanged(object? sender, EventArgs e) => changes++;
+    }
+
+    [Fact]
     public void Resx_FR_and_EN_have_same_keys()
     {
         // Charge les deux fichiers resx et vérifie la parité des clés.

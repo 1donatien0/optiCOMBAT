@@ -17,7 +17,7 @@
 //! Le fichier est téléchargé par la couche C# et stocké dans
 //! `%LocalAppData%\optiCombat\threat_intel\threatfox.csv`.
 
-use crate::{IocFeed, IocKind, IocMatch, IocSource};
+use crate::{IocFeed, IocKind, IocMatch, IocSource, MAX_FEED_ENTRIES};
 use std::collections::HashMap;
 
 /// Entrée interne ThreatFox (ce qu'on garde en mémoire par IOC).
@@ -47,6 +47,9 @@ impl ThreatFoxFeed {
     pub fn load_csv(&mut self, csv: &str) -> usize {
         let mut count = 0usize;
         for line in csv.lines() {
+            if self.entries.len() >= MAX_FEED_ENTRIES {
+                break;
+            }
             let line = line.trim();
             if line.is_empty() || line.starts_with('#') {
                 continue;

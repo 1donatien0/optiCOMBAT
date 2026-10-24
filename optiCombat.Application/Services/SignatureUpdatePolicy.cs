@@ -7,23 +7,28 @@ namespace optiCombat.Services
         private static readonly TimeSpan StandardYaraInterval = TimeSpan.FromHours(24);
         private static readonly TimeSpan AggressiveClamInterval = TimeSpan.FromHours(2);
         private static readonly TimeSpan AggressiveYaraInterval = TimeSpan.FromHours(12);
+        private static readonly TimeSpan StandardIntelInterval = TimeSpan.FromHours(12);
+        private static readonly TimeSpan AggressiveIntelInterval = TimeSpan.FromHours(6);
 
         public static void ApplyAutoUpdateTimers(
             ISignatureAutoUpdateTarget freshclam,
             ISignatureAutoUpdateTarget rules,
             bool enabled,
-            IUserPreferencesAccessor preferences)
+            IUserPreferencesAccessor preferences,
+            ISignatureAutoUpdateTarget? threatIntel = null)
         {
             if (!enabled)
             {
                 freshclam.DisableAutoUpdate();
                 rules.DisableAutoUpdate();
+                threatIntel?.DisableAutoUpdate();
                 return;
             }
 
             var aggressive = preferences.Current.AggressiveSignatureUpdates;
             freshclam.EnableAutoUpdate(aggressive ? AggressiveClamInterval : StandardClamInterval);
             rules.EnableAutoUpdate(aggressive ? AggressiveYaraInterval : StandardYaraInterval);
+            threatIntel?.EnableAutoUpdate(aggressive ? AggressiveIntelInterval : StandardIntelInterval);
         }
 
         public static void ScheduleStartupRefreshIfStale(ServiceContainer container, IUserPreferencesAccessor preferences)
@@ -44,6 +49,8 @@ namespace optiCombat.Services
                     AppLogger.Info("SignatureUpdatePolicy", "Signatures potentiellement obsolètes — MAJ au démarrage");
                     await fresh.UpdateAsync().ConfigureAwait(false);
                     await container.RulesUpdater.UpdateAsync().ConfigureAwait(false);
+                    // Sans clé abuse.ch ou si les feeds sont récents : aucune requête.
+                    await container.ThreatIntelUpdater.UpdateAsync().ConfigureAwait(false);
                 }
                 catch (Exception ex)
                 {

@@ -15,30 +15,29 @@ namespace optiCombat.Localization
         private const string LegacyFrenchName = "Scanner avec optiCombat";
         private const string LegacyEnglishName = "Scan with optiCombat";
 
+        /// <summary>Tests uniquement : exécutable inscrit dans le menu.</summary>
+        internal static string? ExecutablePathOverride { get; set; }
+
         public static void ApplyForCurrentCulture()
         {
             var menuName = LocalizationService.GetString("Shell_ScanWith");
-            var exe = Environment.ProcessPath;
+            var exe = ExecutablePathOverride ?? Environment.ProcessPath;
             if (string.IsNullOrWhiteSpace(exe))
                 exe = System.Diagnostics.Process.GetCurrentProcess().MainModule?.FileName;
             if (string.IsNullOrWhiteSpace(exe))
                 return;
 
+            var shellApi = SystemShell.Current;
             try
             {
                 foreach (var shellKey in ShellKeys)
                 {
-                    RemoveMenu(shellKey, LegacyFrenchName);
-                    RemoveMenu(shellKey, LegacyEnglishName);
+                    RemoveMenu(shellApi, shellKey, LegacyFrenchName);
+                    RemoveMenu(shellApi, shellKey, LegacyEnglishName);
 
-                    using var shell = Registry.CurrentUser.CreateSubKey(shellKey);
-                    if (shell == null)
-                        continue;
-
-                    using var menu = shell.CreateSubKey(menuName);
-                    menu?.SetValue("Icon", $"{exe},0");
-                    using var command = menu?.CreateSubKey("command");
-                    command?.SetValue("", $"\"{exe}\" --scan \"%1\"");
+                    var menu = shellKey + "\\" + menuName;
+                    shellApi.SetCurrentUserValue(menu, "Icon", $"{exe},0", RegistryValueKind.String);
+                    shellApi.SetCurrentUserValue(menu + "\\command", string.Empty, $"\"{exe}\" --scan \"%1\"", RegistryValueKind.String);
                 }
             }
             catch (Exception ex)
@@ -47,12 +46,11 @@ namespace optiCombat.Localization
             }
         }
 
-        private static void RemoveMenu(string shellKey, string name)
+        private static void RemoveMenu(ISystemShell shellApi, string shellKey, string name)
         {
             try
             {
-                using var shell = Registry.CurrentUser.OpenSubKey(shellKey, writable: true);
-                shell?.DeleteSubKeyTree(name, throwOnMissingSubKey: false);
+                shellApi.DeleteCurrentUserSubKeyTree(shellKey + "\\" + name);
             }
             catch
             {

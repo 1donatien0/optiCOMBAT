@@ -26,6 +26,9 @@ namespace optiCombat.Services
             _exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "optiCombat.exe");
         }
 
+        /// <summary>Outil de planification (remplaçable dans les tests).</summary>
+        internal string SchtasksPath { get; set; } = "schtasks.exe";
+
         public bool EnsureWatchdogTask()
         {
             if (!_prefs.Current.TamperProtectionEnabled)
@@ -36,7 +39,7 @@ namespace optiCombat.Services
                 DeleteWatchdogTask();
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = SchtasksPath,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -75,7 +78,7 @@ namespace optiCombat.Services
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = SchtasksPath,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                 };

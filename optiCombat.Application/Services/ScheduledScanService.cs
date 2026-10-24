@@ -15,11 +15,19 @@ namespace optiCombat.Services
     {
         private const string TaskName = "optiCombat_DailyScan";
         private readonly string _exePath;
+        private readonly string _schtasks;
         private TimeSpan _scheduledTime = TimeSpan.FromHours(2);
 
         public ScheduledScanService()
+            : this("schtasks.exe", Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "optiCombat.exe"))
         {
-            _exePath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "optiCombat.exe");
+        }
+
+        /// <summary>Constructeur de test : outil schtasks et exécutable planifié imposés.</summary>
+        internal ScheduledScanService(string schtasksPath, string exePath)
+        {
+            _schtasks = schtasksPath;
+            _exePath = exePath;
         }
 
         /// <summary>
@@ -37,7 +45,7 @@ namespace optiCombat.Services
 
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -79,7 +87,7 @@ namespace optiCombat.Services
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -108,7 +116,7 @@ namespace optiCombat.Services
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -140,7 +148,7 @@ namespace optiCombat.Services
                 // 1) XML — indépendant de la locale pour l'heure du trigger
                 var xmlPsi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -158,7 +166,7 @@ namespace optiCombat.Services
                 // 2) LIST /V — « Next Run Time » / « Prochaine exécution » (locale Windows)
                 var listPsi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
@@ -192,7 +200,7 @@ namespace optiCombat.Services
             {
                 var psi = new ProcessStartInfo
                 {
-                    FileName = "schtasks.exe",
+                    FileName = _schtasks,
                     UseShellExecute = false,
                     CreateNoWindow = true,
                     RedirectStandardOutput = true,
