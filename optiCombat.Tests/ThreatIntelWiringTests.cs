@@ -53,7 +53,7 @@ public sealed class ThreatIntelPolicyTests
         var dir = Path.Combine(Path.GetTempPath(), "oc_coord_" + Guid.NewGuid().ToString("N"));
         var http = new FakeHttpHandler(); // 503 partout
         var intel = new ThreatIntelFeedUpdater(
-            new FixedPreferencesAccessor(new UserPreferences { AbuseChAuthKey = "abcdefabcdefabcdef0123" }),
+            new FixedPreferencesAccessor(new UserPreferences { AbuseChAuthKey = "testtesttesttest" }),
             dir, new HttpClient(http), () => DateTime.UtcNow);
         var runner = new SignatureUpdateUiRunner();
         var log = new List<string>();
@@ -70,7 +70,7 @@ public sealed class ThreatIntelPolicyTests
 [Collection("OpticombatPrefs")]
 public sealed class ThreatIntelContainerTests : IDisposable
 {
-    private const string Key = "abcdefabcdefabcdef0123456789";
+    private const string Key = "testtesttesttest";
     private readonly IsolatedServices _env = new();
 
     public void Dispose() => _env.Dispose();

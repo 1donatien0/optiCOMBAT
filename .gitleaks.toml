@@ -1,0 +1,13 @@
+# Le scan CI parcourt tout l'historique (fetch-depth: 0). Ces chaînes sont des
+# fixtures alphanumériques des tests threat intel, jamais une clé abuse.ch.
+[extend]
+useDefault = true
+
+[[allowlists]]
+description = "Fixtures des tests threat intel"
+regexes = [
+  '''0123456789abcdefABCDEF0123456789abcdef0123456789''',
+  '''abcdefabcdefabcdef0123456789''',
+  '''abcdefabcdefabcdef0123''',
+  '''0123456789abcdef''',
+]

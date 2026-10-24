@@ -10,7 +10,7 @@ namespace optiCombat.Tests;
 
 public sealed class ThreatIntelFeedUpdaterTests : IDisposable
 {
-    private const string Key = "0123456789abcdefABCDEF0123456789abcdef0123456789";
+    private const string Key = "testtesttesttest";
 
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "oc_ti_" + Guid.NewGuid().ToString("N"));
     private readonly FakeHttpHandler _http = new();
@@ -73,10 +73,10 @@ public sealed class ThreatIntelFeedUpdaterTests : IDisposable
     [InlineData("", false)]
     [InlineData("   ", false)]
     [InlineData("short", false)]
-    [InlineData("0123456789abcdef", true)]
-    [InlineData("  0123456789abcdef  ", true)]
-    [InlineData("0123456789abcdef/../x", false)]
-    [InlineData("0123456789abcdef?q=1", false)]
+    [InlineData("testtesttesttest", true)]
+    [InlineData("  testtesttesttest  ", true)]
+    [InlineData("testtesttesttest/../x", false)]
+    [InlineData("testtesttesttest?q=1", false)]
     [InlineData("0123456789abcdéf0123", false)]
     public void IsValidAuthKey_accepts_only_alphanumeric_keys(string? key, bool expected) =>
         Assert.Equal(expected, ThreatIntelFeedUpdater.IsValidAuthKey(key));
