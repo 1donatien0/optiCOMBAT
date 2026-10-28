@@ -16,7 +16,7 @@ sha2 = "0.10"
 getrandom = { version = "0.2", features = ["std"] }
 
 [target.'cfg(windows)'.dependencies]
-windows-sys = { version = "0.59", optional = true, features = [
+windows-sys = { version = "0.61", optional = true, features = [
     "Win32_Foundation",
     "Win32_Security_Cryptography",
     "Win32_System_Memory",
