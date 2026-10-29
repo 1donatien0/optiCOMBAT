@@ -85,7 +85,7 @@ fn try_dpapi_key_provider() -> Option<Box<dyn KeyProvider>> {
     }
     // Première utilisation : générer une clé aléatoire et l'envelopper.
     let mut key = [0u8; 32];
-    getrandom::getrandom(&mut key).ok()?;
+    getrandom::fill(&mut key).ok()?;
     let wrapped = windows_impl::DpapiKeyProvider::wrap(&key).ok()?;
     if let Some(parent) = path.parent() {
         std::fs::create_dir_all(parent).ok()?;
