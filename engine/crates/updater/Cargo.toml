@@ -6,5 +6,5 @@ rust-version.workspace = true
 license.workspace = true
 
 [dependencies]
-ed25519-dalek = "2"
+ed25519-dalek = "3"
 sha2 = "0.10"
