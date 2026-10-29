@@ -577,7 +577,7 @@ checksum = "b4596b6d070b27117e987119b4dac604f3c58cfb0b191112e24771b2faeac1a6"
 name = "platform"
 version = "0.1.0"
 dependencies = [
- "getrandom 0.2.17",
+ "getrandom 0.4.3",
  "sha2 0.10.9",
  "windows-sys 0.61.2",
 ]
