@@ -69,10 +69,10 @@ namespace optiCombat.Services
                 return;
             }
 
-            if (ScannedFileLineRegex.IsMatch(line))
+            var m = ScannedFileLineRegex.Match(line);
+            if (m.Success)
             {
-                var m = ScannedFileLineRegex.Match(line);
-                var scannedPath = m.Success ? m.Groups["path"].Value.Trim() : string.Empty;
+                var scannedPath = m.Groups["path"].Value.Trim();
 
                 result.FilesScanned++;
                 if (ShouldReportScanProgress(result.FilesScanned))
