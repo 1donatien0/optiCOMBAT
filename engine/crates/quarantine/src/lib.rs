@@ -9,8 +9,8 @@
 //! ici fournie par l'appelant ; côté Windows elle est enveloppée par DPAPI
 //! (portée utilisateur) — étape plateforme hors du cœur portable.
 
-use aes_gcm::aead::{Aead, KeyInit, OsRng};
-use aes_gcm::{AeadCore, Aes256Gcm, Key, Nonce};
+use aes_gcm::aead::{Aead, KeyInit};
+use aes_gcm::{Aes256Gcm, Nonce};
 use std::path::{Path, PathBuf};
 
 #[derive(Debug, Clone)]
@@ -94,11 +94,14 @@ impl Quarantine {
 
 /// Chiffre `data` en AES-256-GCM. Format : `nonce(12) || ciphertext+tag`.
 fn seal(data: &[u8], key: &[u8; 32]) -> Vec<u8> {
-    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
-    let nonce = Aes256Gcm::generate_nonce(&mut OsRng); // 12 octets aléatoires
-    let ct = cipher.encrypt(&nonce, data).expect("chiffrement AES-GCM");
+    let cipher = Aes256Gcm::new(key.into());
+    let mut nonce = [0u8; 12];
+    getrandom::fill(&mut nonce).expect("aléa système (nonce AES-GCM)");
+    let ct = cipher
+        .encrypt(&Nonce::from(nonce), data)
+        .expect("chiffrement AES-GCM");
     let mut out = Vec::with_capacity(12 + ct.len());
-    out.extend_from_slice(nonce.as_slice());
+    out.extend_from_slice(&nonce);
     out.extend_from_slice(&ct);
     out
 }
@@ -110,9 +113,9 @@ fn unseal(blob: &[u8], key: &[u8; 32]) -> Option<Vec<u8>> {
         return None;
     }
     let (nonce_bytes, ct) = blob.split_at(12);
-    let cipher = Aes256Gcm::new(Key::<Aes256Gcm>::from_slice(key));
-    let nonce = Nonce::from_slice(nonce_bytes);
-    cipher.decrypt(nonce, ct).ok()
+    let cipher = Aes256Gcm::new(key.into());
+    let nonce = Nonce::try_from(nonce_bytes).ok()?;
+    cipher.decrypt(&nonce, ct).ok()
 }
 
 /// SHA-256 — implémentation autonome (sera remplacée par la crate `sha2`).

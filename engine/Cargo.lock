@@ -594,6 +594,7 @@ version = "0.1.0"
 dependencies = [
  "aes-gcm",
  "engine-core",
+ "getrandom 0.4.3",
 ]
 
 [[package]]
