@@ -74,6 +74,8 @@ public sealed class ContainerApplyTests : IDisposable
         vm.Confirm = confirm;
         vm.ScheduledHour = 30; // borné à 23
         vm.ScheduledMinute = -4; // borné à 0
+        // Sinon le /Query lancé par le constructeur concourt avec /Delete et /Create sur le journal du faux schtasks.
+        await vm.InitialScheduleRefresh;
 
         FakeTools.Script(_env.Schtasks);
         await vm.ToggleScheduledScanAsync(true);

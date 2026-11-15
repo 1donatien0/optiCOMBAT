@@ -4,6 +4,7 @@ using optiCombat.Services;
 
 namespace optiCombat.Tests;
 
+[Collection(nameof(ProtectionPipeClientTests))]
 public sealed class ProtectionPipeServerTests
 {
     [Fact]

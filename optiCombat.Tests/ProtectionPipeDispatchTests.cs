@@ -8,6 +8,7 @@ namespace optiCombat.Tests;
 /// Surface IPC locale du service : chaque requête invalide doit produire une réponse d'erreur
 /// (jamais une exception, jamais un scan), testée sans tube nommé via <c>Dispatch</c>.
 /// </summary>
+[Collection(nameof(ProtectionPipeClientTests))]
 public sealed class ProtectionPipeDispatchTests : IDisposable
 {
     private readonly string _dir = Path.Combine(Path.GetTempPath(), "opticombat_ipcd_" + Guid.NewGuid().ToString("N"));

@@ -48,10 +48,7 @@ impl LocalKeyProvider {
 
 impl KeyProvider for LocalKeyProvider {
     fn master_key(&self) -> [u8; 32] {
-        let digest = Sha256::digest(&self.secret);
-        let mut key = [0u8; 32];
-        key.copy_from_slice(&digest);
-        key
+        Sha256::digest(&self.secret).into()
     }
 }
 

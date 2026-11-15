@@ -284,7 +284,7 @@ public sealed class ThreatIntelFeedUpdaterTests : IDisposable
         var target = Path.Combine(_dir, "out.csv");
         var sb = new StringBuilder();
         sb.Append("# header\r\n");
-        sb.Append(new string('x', ThreatIntelFeedUpdater.MaxLineChars + 10)).Append(",y\n");
+        sb.Append('x', ThreatIntelFeedUpdater.MaxLineChars + 10).Append(",y\n");
         for (var i = 0; i < 5; i++)
             sb.Append("a,").Append(i).Append("\r\n");
         sb.Append("no comma line\n");

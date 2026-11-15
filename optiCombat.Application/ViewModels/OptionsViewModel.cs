@@ -107,9 +107,12 @@ public sealed class OptionsViewModel : INotifyPropertyChanged
         foreach (var path in excl.ExcludedFolders)
             Exclusions.Add(path);
 
-        _ = RefreshScheduledStatusAsync();
+        InitialScheduleRefresh = RefreshScheduledStatusAsync();
         NotifyAll();
     }
+
+    /// <summary>Lecture de la tâche planifiée lancée au chargement, sans être attendue.</summary>
+    internal Task InitialScheduleRefresh { get; private set; } = Task.CompletedTask;
 
     public void SaveNotifications(bool enabled)
     {
