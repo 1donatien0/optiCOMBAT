@@ -271,6 +271,13 @@ mod tests {
         d
     }
 
+    /// Le dispatcher est global et `cargo test` parallélise : un test qui
+    /// recharge la threat intel ne doit pas écraser celle d'un autre en cours.
+    fn threat_intel_lock() -> std::sync::MutexGuard<'static, ()> {
+        static LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+        LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     fn take_string(raw: *mut c_char) -> String {
         assert!(!raw.is_null());
         let s = unsafe { CStr::from_ptr(raw).to_str().unwrap().to_string() };
@@ -298,6 +305,7 @@ mod tests {
 
     #[test]
     fn load_threat_intel_detecte_un_hash_malwarebazaar() {
+        let _guard = threat_intel_lock();
         let payload = b"echantillon ffi malwarebazaar opticombat";
         let sha = reputation_sha256(payload);
         let dir = ffi_dir("mb");
@@ -321,6 +329,7 @@ mod tests {
 
     #[test]
     fn load_threat_intel_dossier_vide_renvoie_zero() {
+        let _guard = threat_intel_lock();
         let dir = ffi_dir("empty");
         let c = CString::new(dir.to_str().unwrap()).unwrap();
         assert_eq!(unsafe { opticombat_load_threat_intel(c.as_ptr()) }, 0);
