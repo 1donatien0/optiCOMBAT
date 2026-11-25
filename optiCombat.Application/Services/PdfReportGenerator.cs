@@ -18,6 +18,9 @@ namespace optiCombat.Services
         static PdfReportGenerator()
         {
             QuestPDF.Settings.License = LicenseType.Community;
+            // QuestPDF 2026.9 n'utilise plus les polices du système. Segoe UI reste
+            // la police des rapports, et elle est fournie avec Windows.
+            QuestPDF.Settings.UseSystemFonts = true;
         }
 
         private static string RedactPath(string? path) => PathRedaction.RedactPath(path);
