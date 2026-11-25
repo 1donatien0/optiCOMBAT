@@ -1,4 +1,4 @@
-using Microsoft.UI.Xaml;
+﻿using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using optiCombat.Localization;
 using optiCombat.WinUI.Services;
@@ -341,6 +341,9 @@ public sealed partial class OptionsPage : UserControl
     }
 
     private void OpenLogsFolder_Click(object sender, RoutedEventArgs e) => ViewModel.OpenLogsFolder();
+
+    private void PrivacyPolicy_Click(object sender, RoutedEventArgs e) =>
+        ViewModel.OpenBundledDocument(@"docs\POLITIQUE_CONFIDENTIALITE.md");
 
     private void License_Click(object sender, RoutedEventArgs e) => ViewModel.OpenBundledDocument("LICENSE.txt");
 
