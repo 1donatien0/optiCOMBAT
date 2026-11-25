@@ -68,6 +68,7 @@ _build_verify/
 sbom/
 coverage/
 *.opencover.xml
+*.cobertura.xml
 
 # Raccourcis Windows locaux (non versionnés)
 *.lnk

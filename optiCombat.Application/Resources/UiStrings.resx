@@ -938,6 +938,7 @@ Modifiable à tout moment dans Options → Protection.</value></data>
   <data name="Opt_OpenLogsFolder" xml:space="preserve"><value>Ouvrir le dossier des journaux</value></data>
   <data name="Opt_LogsOpenError" xml:space="preserve"><value>Impossible d&apos;ouvrir le dossier des journaux : {0}</value></data>
   <data name="Opt_License" xml:space="preserve"><value>Contrat de licence (EULA)</value></data>
+  <data name="Opt_PrivacyPolicy" xml:space="preserve"><value>Politique de confidentialité</value></data>
   <data name="Opt_OpenDocError" xml:space="preserve"><value>Impossible d&apos;ouvrir le document : {0}</value></data>
   <data name="Clean_CopyLog" xml:space="preserve"><value>Copier le journal</value></data>
   <data name="Clean_WUCacheCb" xml:space="preserve"><value>Cache Windows Update (admin)</value></data>

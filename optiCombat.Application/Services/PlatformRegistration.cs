@@ -12,6 +12,12 @@ public static class PlatformRegistration
     private const string AmsiProviderGuid = "{A8F4E2B1-9C3D-4E5F-8A7B-1C2D3E4F5A6B}";
     private const string AmsiProviderName = "optiCombat AMSI Provider";
 
+    /// <summary>Nom du minifiltre (fltmc, INF, installateur) — doit rester identique partout.</summary>
+    internal const string MinifilterName = "optiCombatMinifilter";
+
+    /// <summary>Pilote du minifiltre, copié dans \drivers puis chargé par fltmc.</summary>
+    internal const string MinifilterSysFileName = "optiCombat.Minifilter.sys";
+
     /// <summary>Tests uniquement : dossier des binaires livrés et dossier des pilotes.</summary>
     internal static string? BaseDirectoryOverride { get; set; }
 
@@ -45,18 +51,18 @@ public static class PlatformRegistration
     {
         try
         {
-            var sys = Path.Combine(BaseDirectory, "optiCombat.Minifilter.sys");
+            var sys = Path.Combine(BaseDirectory, MinifilterSysFileName);
             if (!File.Exists(sys))
             {
-                AppLogger.Warn("PlatformRegistration", "optiCombat.Minifilter.sys absent — minifilter non chargé");
+                AppLogger.Warn("PlatformRegistration", $"{MinifilterSysFileName} absent — minifilter non chargé");
                 return;
             }
 
-            var dest = Path.Combine(DriversDirectoryOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers"), "optiCombat.Minifilter.sys");
+            var dest = Path.Combine(DriversDirectoryOverride ?? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.System), "drivers"), MinifilterSysFileName);
             if (!File.Exists(dest))
                 File.Copy(sys, dest, overwrite: true);
 
-            RunProcess("fltmc.exe", "load optiCombatMinifilter");
+            RunProcess("fltmc.exe", "load " + MinifilterName);
             AppLogger.Info("PlatformRegistration", "Minifilter chargé (ou déjà actif)");
         }
         catch (Exception ex)
@@ -67,7 +73,7 @@ public static class PlatformRegistration
 
     public static void TryUnloadMinifilter()
     {
-        try { RunProcess("fltmc.exe", "unload optiCombatMinifilter"); } catch { }
+        try { RunProcess("fltmc.exe", "unload " + MinifilterName); } catch { }
     }
 
     private static void RunProcess(string file, string args) =>

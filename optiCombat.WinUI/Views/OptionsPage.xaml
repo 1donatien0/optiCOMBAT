@@ -1,4 +1,4 @@
-<UserControl
+﻿<UserControl
     x:Class="optiCombat.WinUI.Views.OptionsPage"
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
     xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
@@ -462,6 +462,7 @@
                     <StackPanel Grid.Column="1" Spacing="8" VerticalAlignment="Center">
                         <Button HorizontalAlignment="Stretch" Click="OpenLogsFolder_Click" loc:Loc.Content="Opt_OpenLogsFolder" />
                         <Button HorizontalAlignment="Stretch" Click="License_Click" loc:Loc.Content="Opt_License" />
+                        <Button HorizontalAlignment="Stretch" Click="PrivacyPolicy_Click" loc:Loc.Content="Opt_PrivacyPolicy" />
                     </StackPanel>
                 </Grid>
 

@@ -1,3 +1,5 @@
+using optiCombat.Models;
+
 namespace optiCombat.Services
 {
     /// <summary>
@@ -30,57 +32,61 @@ namespace optiCombat.Services
 
         public bool IsClamAvInstalled() => _clamscan.IsClamAvInstalled();
 
-        public async Task<Models.ScanResult> ScanFileAsync(
+        public Task<ScanResult> ScanFileAsync(
             string filePath,
-            IProgress<Models.ScanProgress>? progress = null,
+            IProgress<ScanProgress>? progress = null,
             CancellationToken ct = default)
-        {
-            if (await _tryClamdReady(ct).ConfigureAwait(false))
-            {
-                try
-                {
-                    return await _clamd.ScanFileAsync(filePath, progress, ct).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    AppLogger.Warn("CompositeClamAv", "clamd fichier — repli clamscan", ex);
-                }
-            }
+            => ScanWithClamdFallbackAsync(
+                backend => backend.ScanFileAsync(filePath, progress, ct),
+                "clamd fichier — repli clamscan",
+                ct);
 
-            ClamdEngine.LastMode = "clamscan";
-            return await _clamscan.ScanFileAsync(filePath, progress, ct).ConfigureAwait(false);
-        }
-
-        public async Task<Models.ScanResult> ScanFolderAsync(
+        public Task<ScanResult> ScanFolderAsync(
             string folderPath,
-            IProgress<Models.ScanProgress>? progress = null,
+            IProgress<ScanProgress>? progress = null,
             CancellationToken ct = default)
-        {
-            if (await _tryClamdReady(ct).ConfigureAwait(false))
-            {
-                try
-                {
-                    return await _clamd.ScanFolderAsync(folderPath, progress, ct).ConfigureAwait(false);
-                }
-                catch (Exception ex)
-                {
-                    AppLogger.Warn("CompositeClamAv", "clamd dossier — repli clamscan", ex);
-                }
-            }
+            => ScanWithClamdFallbackAsync(
+                backend => backend.ScanFolderAsync(folderPath, progress, ct),
+                "clamd dossier — repli clamscan",
+                ct);
 
-            ClamdEngine.LastMode = "clamscan";
-            return await _clamscan.ScanFolderAsync(folderPath, progress, ct).ConfigureAwait(false);
-        }
-
-        public Task<Models.ScanResult> ScanFileListAsync(
+        public Task<ScanResult> ScanFileListAsync(
             IReadOnlyList<string> files,
             string targetPath,
-            IProgress<Models.ScanProgress>? progress = null,
+            IProgress<ScanProgress>? progress = null,
             CancellationToken ct = default)
         {
             // clamscan --file-list = un seul processus ; plus rapide que N appels clamd.
             ClamdEngine.LastMode = "clamscan";
             return _clamscan.ScanFileListAsync(files, targetPath, progress, ct);
+        }
+
+        private async Task<ScanResult> ScanWithClamdFallbackAsync(
+            Func<IClamAvOrchestratorBackend, Task<ScanResult>> run,
+            string warnMessage,
+            CancellationToken ct)
+        {
+            if (await _tryClamdReady(ct).ConfigureAwait(false))
+            {
+                try
+                {
+                    var result = await run(_clamd).ConfigureAwait(false);
+                    if (result.Status != ScanStatus.Error)
+                        return result;
+                    AppLogger.Warn("CompositeClamAv", warnMessage + " (statut erreur)");
+                }
+                catch (OperationCanceledException)
+                {
+                    throw;
+                }
+                catch (Exception ex)
+                {
+                    AppLogger.Warn("CompositeClamAv", warnMessage, ex);
+                }
+            }
+
+            ClamdEngine.LastMode = "clamscan";
+            return await run(_clamscan).ConfigureAwait(false);
         }
     }
 }
