@@ -119,7 +119,26 @@ namespace optiCombat.Services
             {
                 if (ct.IsCancellationRequested) break;
                 if (!File.Exists(file)) continue;
-                var partial = await ScanFileAsync(file, progress, ct).ConfigureAwait(false);
+                ScanResult partial;
+                try
+                {
+                    partial = await ScanFileAsync(file, progress, ct).ConfigureAwait(false);
+                }
+                catch (FileNotFoundException)
+                {
+                    // Fichier supprimé entre le test d'existence et l'analyse (fichier temporaire).
+                    continue;
+                }
+                if (partial.Status == ScanStatus.Cancelled)
+                {
+                    merged.Status = ScanStatus.Cancelled;
+                    merged.FinishedAt = DateTime.Now;
+                    return merged;
+                }
+
+                if (partial.Status == ScanStatus.Error)
+                    throw new IOException(partial.ErrorMessage ?? "Erreur clamd sur un fichier de la liste.");
+
                 foreach (var threat in partial.Threats)
                     merged.Threats.Add(threat);
                 merged.FilesScanned += Math.Max(partial.FilesScanned, 1);
@@ -157,16 +176,43 @@ namespace optiCombat.Services
             try
             {
                 using var client = _clientFactory();
-                string output = recursive
+                var response = recursive
                     ? await client.ScanRecursiveAsync(targetPath, ct).ConfigureAwait(false)
                     : await client.ScanFileAsync(targetPath, ct).ConfigureAwait(false);
 
-                foreach (var line in output.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
+                // Réponse tronquée ou absente : ne jamais conclure « aucune menace ».
+                // L'exception remonte au backend composite, qui relance l'analyse avec clamscan.
+                if (!response.Completed)
+                    throw new ClamdIncompleteResponseException(
+                        $"Réponse clamd incomplète pour {PathRedaction.RedactPath(targetPath)}");
+
+                var errorLines = 0;
+                foreach (var line in response.Text.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries))
                 {
                     if (ct.IsCancellationRequested) break;
+                    if (IsClamdErrorLine(line))
+                    {
+                        errorLines++;
+                        continue;
+                    }
                     lock (_parseLock)
                         ClamScanLineParser.ProcessLine(line, result, progress, _exclusions);
                 }
+
+                // clamd n'a pas pu lire la cible (droits, verrou, chemin) : rien n'a été
+                // analysé, le résultat ne doit pas être « aucune menace ». L'exception
+                // fait relancer l'analyse par clamscan (processus de l'utilisateur).
+                if (!ct.IsCancellationRequested
+                    && errorLines > 0
+                    && result.FilesScanned == 0
+                    && result.Threats.Count == 0)
+                {
+                    throw new IOException(
+                        $"clamd n'a pas pu analyser {PathRedaction.RedactPath(targetPath)} ({errorLines} erreur(s)).");
+                }
+
+                if (errorLines > 0)
+                    AppLogger.Warn("ClamdEngine", $"{errorLines} fichier(s) non lisible(s) par clamd sous {PathRedaction.RedactPath(targetPath)}");
 
                 result.FinishedAt = DateTime.Now;
                 result.Status = ct.IsCancellationRequested ? ScanStatus.Cancelled : ScanStatus.Completed;
@@ -178,10 +224,12 @@ namespace optiCombat.Services
             }
             catch (Exception ex)
             {
-                result.Status = ScanStatus.Error;
-                result.ErrorMessage = ex.Message;
-                result.FinishedAt = DateTime.Now;
-                AppLogger.Error("ClamdEngine", $"Scan {targetPath}", ex);
+                // Toute panne clamd (socket, réponse incomplète, parse) remonte au
+                // backend composite, qui relance l'analyse avec clamscan. Ne pas
+                // renvoyer ScanStatus.Error : ce statut était présenté comme un
+                // scan terminé, sans repli.
+                AppLogger.Error("ClamdEngine", $"Scan {PathRedaction.RedactPath(targetPath)}", ex);
+                throw;
             }
 
             progress?.Report(new ScanProgress
@@ -193,6 +241,18 @@ namespace optiCombat.Services
             });
 
             return result;
+        }
+
+        /// <summary>
+        /// Ligne d'erreur clamd : « chemin: raison ERROR » ou réponse globale
+        /// (« UNKNOWN COMMAND », « COMMAND READ TIMED OUT »…).
+        /// </summary>
+        internal static bool IsClamdErrorLine(string line)
+        {
+            var t = line.TrimEnd();
+            return t.EndsWith(" ERROR", StringComparison.Ordinal)
+                || t.Equals("UNKNOWN COMMAND", StringComparison.OrdinalIgnoreCase)
+                || t.Equals("COMMAND READ TIMED OUT", StringComparison.OrdinalIgnoreCase);
         }
     }
 }

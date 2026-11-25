@@ -8,7 +8,7 @@ using optiCombat.Tests.TestSupport;
 
 namespace optiCombat.Tests;
 
-/// <summary>Faux démon clamd (TCP local) : PING, SCAN, CONTSCAN.</summary>
+/// <summary>Faux démon clamd (TCP local) : PING, nSCAN, nCONTSCAN.</summary>
 internal sealed class FakeClamdServer : IDisposable
 {
     private readonly TcpListener _listener = new(IPAddress.Loopback, 0);
@@ -97,18 +97,21 @@ public sealed class ClamdTests : IDisposable
         using var server = new FakeClamdServer(cmd => cmd switch
         {
             "PING" => "PONG\n",
-            _ when cmd.StartsWith("SCAN ", StringComparison.Ordinal) => cmd[5..] + ": OK\n",
+            _ when cmd.StartsWith("nSCAN ", StringComparison.Ordinal) => cmd[6..] + ": OK\n",
             _ => "a: OK\nb: Win.Test FOUND\n",
         });
         using var client = server.Client();
 
         Assert.True(await client.PingAsync());
         var file = Sample("one.txt");
-        Assert.Equal(file + ": OK", await client.ScanFileAsync(file));
+        var single = await client.ScanFileAsync(file);
+        Assert.True(single.Completed);
+        Assert.Equal(file + ": OK", single.Text);
         var multi = await client.ScanRecursiveAsync(_samples);
-        Assert.Contains("Win.Test FOUND", multi, StringComparison.Ordinal);
-        Assert.Equal(2, multi.Split('\n').Length);
-        Assert.Contains(server.Commands, c => c.StartsWith("CONTSCAN ", StringComparison.Ordinal));
+        Assert.True(multi.Completed);
+        Assert.Contains("Win.Test FOUND", multi.Text, StringComparison.Ordinal);
+        Assert.Equal(2, multi.Text.Split('\n').Length);
+        Assert.Contains(server.Commands, c => c.StartsWith("nCONTSCAN ", StringComparison.Ordinal));
     }
 
     [Fact]
@@ -116,7 +119,7 @@ public sealed class ClamdTests : IDisposable
     {
         var bad = Sample("bad.bin");
         var ok = Sample("ok.txt");
-        using var server = new FakeClamdServer(cmd => cmd.StartsWith("SCAN ", StringComparison.Ordinal)
+        using var server = new FakeClamdServer(cmd => cmd.StartsWith("nSCAN ", StringComparison.Ordinal)
             ? $"{bad}: Win.Test.Clamd FOUND\n"
             : $"{ok}: OK\n{bad}: Win.Test.Clamd FOUND\n");
         var engine = Engine(server);
@@ -154,7 +157,7 @@ public sealed class ClamdTests : IDisposable
     }
 
     [Fact]
-    public async Task Unreachable_daemon_marks_the_scan_as_error()
+    public async Task Unreachable_daemon_throws_so_the_composite_falls_back_to_clamscan()
     {
         int port;
         using (var probe = new TcpListener(IPAddress.Loopback, 0))
@@ -165,10 +168,45 @@ public sealed class ClamdTests : IDisposable
         var engine = new ClamdEngine(_prefs, _exclusions, _ => Task.FromResult(true),
             () => new ClamdClient("127.0.0.1", port), new ClamAvEngine(Path.Combine(_root, "none"), _exclusions));
 
-        var result = await engine.ScanFileAsync(Sample("e.txt"));
+        // Plus de ScanStatus.Error : l'exception remonte au backend composite (repli clamscan).
+        await Assert.ThrowsAnyAsync<Exception>(() => engine.ScanFileAsync(Sample("e.txt")));
+    }
 
-        Assert.Equal(ScanStatus.Error, result.Status);
-        Assert.False(string.IsNullOrEmpty(result.ErrorMessage));
+    [Fact]
+    public async Task Error_lines_only_throw_instead_of_reporting_a_clean_scan()
+    {
+        var locked = Sample("locked.sys");
+        using var server = new FakeClamdServer(_ => $"{locked}: Can't open file or directory ERROR\n");
+        var engine = Engine(server);
+
+        await Assert.ThrowsAsync<IOException>(() => engine.ScanFileAsync(locked));
+        await Assert.ThrowsAsync<IOException>(() => engine.ScanFolderAsync(_samples));
+    }
+
+    [Fact]
+    public async Task Error_lines_mixed_with_verdicts_keep_the_scanned_results()
+    {
+        var bad = Sample("bad.bin");
+        var locked = Sample("locked.sys");
+        using var server = new FakeClamdServer(_ =>
+            $"{locked}: Can't open file or directory ERROR\n{bad}: Win.Test.Clamd FOUND\n");
+        var engine = Engine(server);
+
+        var folder = await engine.ScanFolderAsync(_samples);
+
+        Assert.Equal(ScanStatus.Completed, folder.Status);
+        Assert.Equal("Win.Test.Clamd", Assert.Single(folder.Threats).VirusName);
+    }
+
+    [Fact]
+    public async Task Truncated_reply_throws_instead_of_reporting_a_clean_scan()
+    {
+        var file = Sample("t.txt");
+        using var server = new FakeClamdServer(_ => $"{file}: O");
+        var engine = Engine(server);
+
+        await Assert.ThrowsAnyAsync<IOException>(() => engine.ScanFileAsync(file));
+        await Assert.ThrowsAnyAsync<IOException>(() => engine.ScanFolderAsync(_samples));
     }
 
     [Fact]
